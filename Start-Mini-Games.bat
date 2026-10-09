@@ -8,5 +8,5 @@ if not exist "%LAUNCHER%" (
   exit /b 1
 )
 
-powershell.exe -NoProfile -ExecutionPolicy Bypass -STA -File "%LAUNCHER%"
+powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -STA -File "%LAUNCHER%"
 exit /b %errorlevel%

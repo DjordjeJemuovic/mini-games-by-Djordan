@@ -1,3 +1,5 @@
+// === Pravila poteza i prikaz simbola ===
+// Mogući potezi i njihov prikaz na ekranu.
 const moves = ['kamen', 'papir', 'makaze'];
 const moveDetails = {
   kamen: { label: 'Kamen', icon: '✊' },
@@ -5,6 +7,7 @@ const moveDetails = {
   makaze: { label: 'Makaze', icon: '✌️' }
 };
 
+// === HTML reference i podaci iz glavnog menija ===
 const modeScreen = document.querySelector('#mode-screen');
 const hubLink = document.querySelector('#hub-link');
 const gameScreen = document.querySelector('#game-screen');
@@ -32,15 +35,22 @@ const launchPlayers = {
   colorOne: launchParams.get('color1'),
   colorTwo: launchParams.get('color2')
 };
+// Link za povratak u meni zadržava imena i boje koje je korisnik uneo.
 if (launchParams.toString()) hubLink.href = `../mini-games/index.html?${launchParams.toString()}`;
 
+// === Stanje meča ===
+// Čuva režim, rezultate i potez igrača 1 dok igrač 2 ne izabere svoj.
 let gameMode = '';
 let tournamentMode = false;
 let playerOneScore = 0;
 let playerTwoScore = 0;
 let pendingPlayerOneMove = '';
 
+// === Prikaz izabranih poteza ===
+// Pomoćne funkcije skrivaju i otkrivaju izbore radi fer igre 1v1.
+/** Upisuje ikonicu i naziv poteza u prikaz odgovarajućeg igrača. */
 function showChoice(player, move) {
+  // Prikaži simbol i naziv poteza za jednog od igrača.
   const details = moveDetails[move];
   const icon = player === 1 ? choiceOneIcon : choiceTwoIcon;
   const name = player === 1 ? choiceOneName : choiceTwoName;
@@ -48,19 +58,26 @@ function showChoice(player, move) {
   name.textContent = details.label;
 }
 
+/** Sakriva poteze oba igrača dok se ne završi izbor u 1v1. */
 function hidePendingChoices() {
+  // U 1v1 ne otkrivaj prvi potez dok drugi igrač ne izabere svoj.
   choiceOneIcon.textContent = '🔒';
   choiceOneName.textContent = 'Izbor sačuvan';
   choiceTwoIcon.textContent = '❔';
   choiceTwoName.textContent = 'Čeka izbor';
 }
 
+/** Otkrije oba poteza pozivom showChoice za svakog igrača. */
 function showChoices(one, two) {
   showChoice(1, one);
   showChoice(2, two);
 }
 
+// === Pravila i obračun runde ===
+// Ovaj deo odlučuje ko pobeđuje i ažurira rezultat/turnir.
+/** Poredi dva poteza i vraća 0 za nerešeno, 1 ili 2 za pobednika. */
 function determineWinner(one, two) {
+  // Vrati 0 za nerešeno, 1 ako pobeđuje prvi igrač, 2 ako drugi.
   if (one === two) return 0;
   if (
     (one === 'kamen' && two === 'makaze') ||
@@ -70,7 +87,9 @@ function determineWinner(one, two) {
   return 2;
 }
 
+/** Prikaže poteze, uveća rezultat i proveri da li je turnir završen. */
 function completeRound(one, two) {
+  // Otkrij oba poteza, ažuriraj rezultat i proveri uslov za kraj turnira.
   showChoices(one, two);
   const winner = determineWinner(one, two);
   if (winner === 0) {
@@ -99,7 +118,11 @@ function completeRound(one, two) {
   }
 }
 
+// === Tok igre i resetovanje ===
+// Izabrani režim određuje da li potez stiže od drugog igrača ili računara.
+/** Obradi potez korisnika i po potrebi sačeka potez drugog igrača. */
 function play(move) {
+  // Protiv računara odigraj rundu odmah; u 1v1 prvo sačuvaj skriveni potez igrača 1.
   if (gameMode === 'computer') {
     const computerMove = moves[Math.floor(Math.random() * moves.length)];
     completeRound(move, computerMove);
@@ -118,7 +141,9 @@ function play(move) {
   pendingPlayerOneMove = '';
 }
 
+/** Pokreće novi solo/računarski ili 1v1 meč i inicijalizuje ekran. */
 function startGame(mode) {
+  // Iz teksta data-mode izvuci tip meča i da li je uključen turnir do 5 pobeda.
   tournamentMode = mode.endsWith('-tournament');
   gameMode = mode.startsWith('pvp') ? 'pvp' : 'computer';
   playerOneScore = 0;
@@ -166,7 +191,9 @@ function startGame(mode) {
   gameScreen.hidden = false;
 }
 
+/** Resetuje rezultat i prikaz poteza za novu partiju istog režima. */
 function resetGame() {
+  // Resetuj rezultat i poteze, ali zadrži izabrani režim i imena igrača.
   playerOneScore = 0;
   playerTwoScore = 0;
   pendingPlayerOneMove = '';
@@ -182,15 +209,23 @@ function resetGame() {
   newGameButton.textContent = tournamentMode ? 'Novi turnir' : 'Nova igra';
 }
 
+// === Povezivanje dugmadi sa logikom igre ===
+// Callback dugmeta režima prenosi njegov data-mode vrednost u startGame.
 modeButtons.forEach(button => {
+  // Svako dugme režima pokreće igru sa odgovarajućim data-mode vrednostima.
+  // Click callback prenosi režim dugmeta u zajedničku funkciju startGame().
   button.addEventListener('click', () => startGame(button.dataset.mode));
 });
 
+// Callback poteza prosleđuje izabrani kamen, papir ili makaze u play().
 moveButtons.forEach(button => {
   button.addEventListener('click', () => play(button.dataset.move));
 });
 
+// Dugme nove igre resetuje skor, a dugme promene režima vraća prethodni ekran.
+// Click callback resetuje trenutni meč.
 newGameButton.addEventListener('click', resetGame);
+// Click callback napušta meč i vraća ekran za izbor režima.
 changeModeButton.addEventListener('click', () => {
   gameMode = '';
   tournamentMode = false;

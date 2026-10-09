@@ -1,4 +1,7 @@
 ﻿const cells = [...document.querySelectorAll('.cell')];
+// === Povezivanje sa HTML ekranima ===
+// Pronalazimo polja table, forme, oznake rezultata i dugmad za navigaciju.
+// Elementi ekrana i dugmad kojima upravlja skripta.
 const status = document.querySelector('#status');
 const restart = document.querySelector('#restart');
 const playAgain = document.querySelector('#play-again');
@@ -23,7 +26,10 @@ const setupScreen = document.querySelector('#setup-screen');
 const gameScreen = document.querySelector('#game-screen');
 const winnerScreen = document.querySelector('#winner-screen');
 const recordsScreen = document.querySelector('#records-screen');
+// === Pravila i trenutno stanje partije ===
+// Svaki niz u wins je jedna od osam kombinacija za pobedu.
 const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+// localStorage ključ; rekordi su sačuvani lokalno u pregledaču.
 const RECORDS_KEY = 'iks-oks-records-v1';
 const launchParams = new URLSearchParams(window.location.search);
 if (launchParams.toString()) hubLink.href = `../mini-games/index.html?${launchParams.toString()}`;
@@ -37,6 +43,7 @@ let tournamentMode = false;
 let tournamentWins = { X: 0, O: 0 };
 const launchedFromHub = launchParams.has('player1') && launchParams.has('player2');
 
+// Učitava imena i boje iz URL parametara i popunjava formu igrača.
 function restoreHubPlayers() {
   playerXInput.value = launchParams.get('player1') || '';
   playerOInput.value = launchParams.get('player2') || '';
@@ -47,11 +54,18 @@ function restoreHubPlayers() {
 restoreHubPlayers();
 let terrainColor = '#14213d';
 
+// === Izgled table ===
+// Promeni samo boju terena preko CSS promenljive.
+/** Postavlja izabranu boju na tabli preko CSS promenljive. */
 function setTerrainColor(color) {
   terrainColor = color;
   boardElement.style.setProperty('--terrain-color', terrainColor);
 }
 
+// === Čitanje i čuvanje rekorda ===
+// Rekordi se čuvaju u localStorage-u; ova sekcija štiti od podataka lošeg formata.
+// Pročitaj i proveri lokalne rekorde; neispravan sadržaj postaje prazna lista.
+/** Učitava i validira rekordnu listu iz localStorage-a; pri grešci vraća []. */
 function readLocalRecords() {
   try {
     const records = JSON.parse(localStorage.getItem(RECORDS_KEY) || '[]');
@@ -64,6 +78,8 @@ function readLocalRecords() {
   }
 }
 
+// localStorage čuva podatke samo u ovom pregledaču/korisničkom profilu.
+/** Serijalizuje rekordnu listu i čuva je pod RECORDS_KEY u localStorage-u. */
 function saveLocalRecords(records) {
   try {
     localStorage.setItem(RECORDS_KEY, JSON.stringify(records));
@@ -72,6 +88,8 @@ function saveLocalRecords(records) {
   }
 }
 
+// Uvećaj broj pobeda za isti par imena ili napravi novi zapis.
+/** Uvećava pobede za uređeni par pobednik/poraženi ili dodaje novi par. */
 function recordWin(winner, loser) {
   const records = readLocalRecords();
   const normalize = name => name.trim().toLocaleLowerCase();
@@ -83,6 +101,9 @@ function recordWin(winner, loser) {
   saveLocalRecords(records);
 }
 
+// === Prikaz rekorda ===
+// Sortiraj rekorde i bezbedno prikaži matchup tekst u DOM-u.
+/** Sortira rekorde i pravi listu elemenata koju prikazuje ekran rekorda. */
 function renderRecords() {
   const records = readLocalRecords();
   records.sort((a, b) => b.wins - a.wins || a.winner.localeCompare(b.winner));
@@ -105,17 +126,26 @@ function renderRecords() {
   recordsList.append(list);
 }
 
+// === Ažuriranje table i turnirskog rezultata ===
+// Ove funkcije usklađuju interaktivnost i rezultat sa stanjem partije.
+// Zaključaj zauzeta polja i celu tablu kada partija nije aktivna.
+/** Usklađuje disabled i ARIA stanja polja sa aktivnošću partije. */
 function updateBoardEnabled() {
   boardElement.setAttribute('aria-disabled', String(!started || finished));
   cells.forEach((cell, index) => { cell.disabled = !started || finished || Boolean(board[index]); });
 }
 
+// Prikaži ukupan rezultat turnira (do pet pobeda).
+/** Ažurira oznaku turnirskog rezultata ili je sakriva van turnira. */
 function updateTournamentStatus() {
   tournamentStatus.hidden = !tournamentMode;
   if (!tournamentMode) return;
   tournamentStatus.textContent = `${playerNames.X}: ${tournamentWins.X}/5 pobeda · ${playerNames.O}: ${tournamentWins.O}/5 pobeda`;
 }
 
+// === Pokretanje i odigravanje partije ===
+// Učitaj imena i boje i prebaci prikaz sa podešavanja na tablu.
+/** Čita profile iz forme, resetuje turnirske poene i otvara tablu. */
 function beginGame() {
   playerNames = {
     X: playerXInput.value.trim() || 'Igrač X',
@@ -136,6 +166,8 @@ function beginGame() {
   updateBoardEnabled();
 }
 
+// Očisti trenutnu tablu, ali ostavi turnirski rezultat netaknut.
+/** Čisti tablu za sledeću partiju turnira, uz očuvanje rezultata turnira. */
 function startNextTournamentGame() {
   board = Array(9).fill('');
   turn = 'X';
@@ -150,11 +182,15 @@ function startNextTournamentGame() {
   updateBoardEnabled();
 }
 
+// === Obrada korisničkih poteza i promene ekrana ===
+// Callback forme sprečava ponovno učitavanje stranice i poziva početak partije.
 playerForm.addEventListener('submit', event => {
   event.preventDefault();
   beginGame();
 });
 
+// Obradi potez, proveri dobitne linije ili nerešeno, pa promeni igrača.
+/** Odigra potez na polju, proveri pobedu/nerešeno i ažurira stanje interakcije. */
 function play(index) {
   if (!started || finished || board[index]) return;
   board[index] = turn;
@@ -191,6 +227,8 @@ function play(index) {
   updateBoardEnabled();
 }
 
+// Vrati sve promenljive na početak i ponovo prikaži izbor režima.
+/** Briše stanje meča i vraća interfejs na izbor režima igre. */
 function reset() {
   board = Array(9).fill('');
   turn = 'X';
@@ -212,24 +250,30 @@ function reset() {
   updateBoardEnabled();
 }
 
+// Svako polje prosleđuje svoj indeks u play() kada ga igrač izabere.
 cells.forEach((cell, index) => cell.addEventListener('click', () => play(index)));
+// Dugme table nastavlja turnir sledećom tablom ili resetuje običnu partiju.
 restart.addEventListener('click', () => {
   if (tournamentMode) startNextTournamentGame();
   else reset();
 });
+// Dugme čestitke nastavlja turnir dok niko nema pet pobeda, inače resetuje igru.
 playAgain.addEventListener('click', () => {
   if (tournamentMode && tournamentWins.X < 5 && tournamentWins.O < 5) startNextTournamentGame();
   else reset();
 });
+// Otvara ekran rekorda i osvežava listu iz localStorage-a.
 showRecordsButton.addEventListener('click', () => {
   modeScreen.hidden = true;
   recordsScreen.hidden = false;
   renderRecords();
 });
+// Vraća sa rekorda na ekran izbora režima.
 backToSetupButton.addEventListener('click', () => {
   recordsScreen.hidden = true;
   modeScreen.hidden = false;
 });
+// U meniju izaberi solo partiju; imena traži samo pri samostalnom pokretanju.
 soloModeButton.addEventListener('click', () => {
   tournamentMode = false;
   if (launchedFromHub) {
@@ -240,6 +284,7 @@ soloModeButton.addEventListener('click', () => {
     setupScreen.hidden = false;
   }
 });
+// U turniru prvi koji skupi pet pobeda postaje pobednik.
 tournamentModeButton.addEventListener('click', () => {
   tournamentMode = true;
   tournamentWins = { X: 0, O: 0 };
@@ -251,16 +296,20 @@ tournamentModeButton.addEventListener('click', () => {
     setupScreen.hidden = false;
   }
 });
+// Vraća iz forme unosa imena/boja na izbor režima.
 backToModesButton.addEventListener('click', () => {
   setupScreen.hidden = true;
   modeScreen.hidden = false;
 });
+// Radio dugmad menjaju boju table kada se promeni izabrana opcija.
 terrainInputs.forEach(input => {
   input.addEventListener('change', () => setTerrainColor(input.value));
 });
 setTerrainColor(terrainColor);
 updateBoardEnabled();
 
+// === Prenos rekordnih podataka ===
+// Preuzmi kopiju rekorda kao JSON fajl; to nije automatski upis u records.json.
 exportRecordsButton.addEventListener('click', () => {
   const file = new Blob([`${JSON.stringify(readLocalRecords(), null, 2)}\n`], { type: 'application/json' });
   const url = URL.createObjectURL(file);
@@ -271,6 +320,8 @@ exportRecordsButton.addEventListener('click', () => {
   URL.revokeObjectURL(url);
 });
 
+// Uvezi JSON kopiju i spoji validne parove sa lokalnim rekordima.
+// Callback fajl inputa učitava JSON asinhrono, validira unose i spaja rekorde.
 importRecordsInput.addEventListener('change', async () => {
   const file = importRecordsInput.files[0];
   if (!file) return;

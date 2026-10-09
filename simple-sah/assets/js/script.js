@@ -1,3 +1,5 @@
+// === HTML elementi i podešavanja profila ===
+// Pronalazimo tablu, igrače, poruke i dugmad koja se menjaju tokom meča.
 const boardElement = document.querySelector('#board');
 const statusElement = document.querySelector('#status');
 const timerElement = document.querySelector('#timer');
@@ -33,6 +35,9 @@ const validColor = color => /^#[\da-f]{6}$/i.test(color || '') ? color : '';
 whitePlayerCard.style.setProperty('--player-accent', validColor(launchParams.get('color1')) || '#7dd3fc');
 blackPlayerCard.style.setProperty('--player-accent', validColor(launchParams.get('color2')) || '#fb7185');
 
+// === Model podataka za šahovsku partiju ===
+// Tabla je 8x8 niz; figura je { color, type, moved } ili null.
+// 'w' označava bele figure, 'b' crne; red 0 je vrh table, red 7 dno.
 let board = [];
 let turn = 'w';
 let selectedSquare = null;
@@ -47,7 +52,11 @@ let timeRemaining = 15 * 60;
 let timerInterval = null;
 const squareElements = [];
 
+/** Gradi početnu 8×8 poziciju kao novi model table. */
+// === Pravila šaha i legalni potezi ===
+// Ovaj blok gradi poziciju, prepoznaje napade i izračunava dozvoljene poteze.
 function createInitialBoard() {
+  // Napravi početni raspored i zabeleži da se nijedna figura još nije pomerila.
   const position = Array.from({ length: 8 }, () => Array(8).fill(null));
   const backRank = ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'];
   for (let column = 0; column < 8; column += 1) {
@@ -59,15 +68,21 @@ function createInitialBoard() {
   return position;
 }
 
+/** Vraća da li su red i kolona validne koordinate table. */
 function inBounds(row, column) {
+  // Proveri da li koordinate ostaju unutar osam redova i kolona.
   return row >= 0 && row < 8 && column >= 0 && column < 8;
 }
 
+/** Pravi kopiju table i objekata figura za simulaciju poteza. */
 function cloneBoard(position) {
+  // Kopiraj figure da simulacija poteza ne menja pravu tablu.
   return position.map(row => row.map(piece => piece ? { ...piece } : null));
 }
 
+/** Proverava da li figura boje byColor napada zadato polje. */
 function isSquareAttacked(position, targetRow, targetColumn, byColor) {
+  // Proveri da li data boja napada polje pešakom, skakačem, kraljem ili linijskom figurom.
   const pawnDirection = byColor === 'w' ? -1 : 1;
   const pawnSourceRow = targetRow - pawnDirection;
   for (const deltaColumn of [-1, 1]) {
@@ -120,7 +135,9 @@ function isSquareAttacked(position, targetRow, targetColumn, byColor) {
   return false;
 }
 
+/** Pronalazi koordinate kralja određene boje ili vraća null. */
 function findKing(position, color) {
+  // Pronađi koordinate kralja date boje; legalnost poteza zavisi od njegove bezbednosti.
   for (let row = 0; row < 8; row += 1) {
     for (let column = 0; column < 8; column += 1) {
       const piece = position[row][column];
@@ -130,15 +147,20 @@ function findKing(position, color) {
   return null;
 }
 
+/** Određuje da li je kralj boje color trenutno napadnut. */
 function isInCheck(position, color) {
+  // Kralj je u šahu ako suprotna boja napada njegovo polje.
   const king = findKing(position, color);
   return king ? isSquareAttacked(position, king.row, king.column, color === 'w' ? 'b' : 'w') : true;
 }
 
+/** Generiše kandidate poteza figure pre provere da li ugrožavaju njenog kralja. */
 function pseudoMoves(position, row, column) {
+  // Generiši poteze po pravilima figure; bez završne provere sopstvenog šaha.
   const piece = position[row][column];
   if (!piece) return [];
   const moves = [];
+  // Dodaje dozvoljeno odredište i javlja da li linijska figura može dalje.
   const addIfAvailable = (targetRow, targetColumn) => {
     if (!inBounds(targetRow, targetColumn)) return false;
     const target = position[targetRow][targetColumn];
@@ -148,6 +170,7 @@ function pseudoMoves(position, row, column) {
   };
 
   if (piece.type === 'P') {
+    // Pešak ide napred, uzima ukoso, može prvi put da pređe dva polja i uzima en passant.
     const direction = piece.color === 'w' ? -1 : 1;
     const startRow = piece.color === 'w' ? 6 : 1;
     const nextRow = row + direction;
@@ -179,6 +202,7 @@ function pseudoMoves(position, row, column) {
   }
 
   if (piece.type === 'K') {
+    // Kralj ide jedno polje; rokada proverava da li su put i kraljevska polja bezbedni.
     for (let dr = -1; dr <= 1; dr += 1) {
       for (let dc = -1; dc <= 1; dc += 1) {
         if (dr !== 0 || dc !== 0) addIfAvailable(row + dr, column + dc);
@@ -206,6 +230,7 @@ function pseudoMoves(position, row, column) {
     }
   }
 
+  // Prati zadate pravce dok ne naiđe na ivicu table ili zauzeto polje.
   const slide = (directions) => {
     for (const [dr, dc] of directions) {
       let targetRow = row + dr;
@@ -221,7 +246,9 @@ function pseudoMoves(position, row, column) {
   return moves;
 }
 
+/** Menja model table za običan potez, rokadu, en passant ili promociju pešaka. */
 function applyMove(position, from, move) {
+  // Primeni običan ili poseban potez na prosleđenoj tabli; pešak automatski postaje dama.
   const piece = position[from.row][from.column];
   position[from.row][from.column] = null;
   if (move.enPassant) position[from.row][move.column] = null;
@@ -236,7 +263,9 @@ function applyMove(position, from, move) {
   position[move.row][move.column] = { ...piece, type: promoted ? 'Q' : piece.type, moved: true };
 }
 
+/** Filtrira pseudo-poteze tako da kralj figure koja igra ne ostane u šahu. */
 function legalMoves(position, row, column) {
+  // Odbaci svaki mogući potez koji bi ostavio sopstvenog kralja u šahu.
   const piece = position[row][column];
   if (!piece) return [];
   return pseudoMoves(position, row, column).filter(move => {
@@ -246,7 +275,9 @@ function legalMoves(position, row, column) {
   });
 }
 
+/** Sakuplja sve legalne poteze boje radi završetka partije i poteza računara. */
 function allLegalMoves(position, color) {
+  // Prikupi legalne poteze svih figura boje; koristi se za šah-mat/pat i AI.
   const availableMoves = [];
   for (let row = 0; row < 8; row += 1) {
     for (let column = 0; column < 8; column += 1) {
@@ -258,7 +289,11 @@ function allLegalMoves(position, color) {
   return availableMoves;
 }
 
+/** Bira potez računara heurističkim bodovanjem uzimanja, promocije i šaha. */
+// === Izbor poteza računara ===
+// AI rangira legalne poteze jednostavnim heuristikama i bira najbolje ocenjen.
 function chooseComputerMove() {
+  // Jednostavan AI: daje prednost uzimanju figura, promociji i davanju šaha.
   const candidates = [];
   const pieceValues = { P: 1, N: 3, B: 3, R: 5, Q: 9, K: 100 };
   for (let row = 0; row < 8; row += 1) {
@@ -283,34 +318,47 @@ function chooseComputerMove() {
   return candidates[0] || null;
 }
 
+/** Vraća ime igrača vezano za boju figure. */
+// === Tajmer, poruke poteza i uslovi završetka ===
+// Ove funkcije upravljaju satom, šahom/matom i materijalnim poređenjem.
 function playerName(color) {
+  // Poveži boju figure sa imenom koje se prikazuje oko table.
   return color === 'w' ? whitePlayerName.textContent : blackPlayerName.textContent;
 }
 
+/** Formatira ceo broj sekundi kao tekst MM:SS. */
 function formatTime(seconds) {
+  // Pretvori sekunde u prikaz MM:SS.
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
   return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
 }
 
+/** Osvežava tekst tajmera i oznaku upozorenja za poslednji minut. */
 function updateTimerDisplay() {
   timerElement.textContent = formatTime(timeRemaining);
   timerElement.classList.toggle('low-time', timeRemaining <= 60);
 }
 
+/** Zaustavlja aktivni interval tajmera ako postoji. */
 function stopTimer() {
+  // Zaustavi interval kako ne bi ostao aktivan posle meča ili promene režima.
   if (timerInterval !== null) {
     window.clearInterval(timerInterval);
     timerInterval = null;
   }
 }
 
+/** Sabira materijalnu vrednost živih figura izabrane boje. */
 function remainingMaterial(color) {
+  // Izračunaj materijalnu vrednost figura, kojom se odlučuje pobednik na vremenu.
   const values = { P: 1, N: 3, B: 3, R: 5, Q: 9, K: 0 };
   return board.flat().reduce((total, piece) => total + (piece?.color === color ? values[piece.type] : 0), 0);
 }
 
+/** Završava partiju istekom vremena i poredi materijal igrača. */
 function finishOnTime() {
+  // Zaustavi meč na 15 minuta i uporedi vrednosti preostalih figura.
   stopTimer();
   gameOver = true;
   aiThinking = false;
@@ -332,10 +380,13 @@ function finishOnTime() {
   renderBoard();
 }
 
+/** Pokreće partiju sa tajmerom od 15 minuta i proverava svaku sekundu. */
 function startTimer() {
+  // Pokreni odbrojavanje od 15 minuta i završi partiju kada stigne do nule.
   stopTimer();
   timeRemaining = 15 * 60;
   updateTimerDisplay();
+  // Interval callback smanjuje vreme i završava partiju na nuli.
   timerInterval = window.setInterval(() => {
     timeRemaining -= 1;
     updateTimerDisplay();
@@ -343,7 +394,9 @@ function startTimer() {
   }, 1000);
 }
 
+/** Osvežava aktivnog igrača i poruku o potezu, šahu, matu ili patu. */
 function updateTurnStatus() {
+  // Obeleži igrača na potezu i prepoznaj šah-mat ili pat.
   const checked = isInCheck(board, turn);
   const movesAvailable = allLegalMoves(board, turn).length > 0;
   whitePlayerCard.classList.toggle('active', turn === 'w' && !gameOver);
@@ -364,11 +417,16 @@ function updateTurnStatus() {
   }
 }
 
+/** Pretvara koordinate niza u šahovsku notaciju, na primer e4. */
 function coordinateLabel(row, column) {
   return `${files[column]}${8 - row}`;
 }
 
+/** Preslikava model table u DOM i ažurira oznake za polja i figure. */
+// === Prikaz modela table i pojedenih figura ===
+// Ovde se stanje JavaScript table pretvara u simbole i klase na HTML poljima.
 function renderBoard() {
+  // Preslikaj model table u dugmad i primeni oznake poteza/šaha za prikaz.
   for (let row = 0; row < 8; row += 1) {
     for (let column = 0; column < 8; column += 1) {
       const square = squareElements[row][column];
@@ -397,7 +455,10 @@ function renderBoard() {
   }
 }
 
+/** Prikazuje uzete figure kod igrača koji ih je osvojio. */
 function renderCapturedPieces() {
+  // Prikaži sitne simbole pojedenih figura iznad igrača koji ih je uzeo.
+  // Povezuje listu uzetih figura jedne boje sa odgovarajućim HTML elementom.
   const renderFor = (color, element) => {
     element.textContent = capturedPieces[color].map(piece => pieceSymbols[piece.color][piece.type]).join(' ');
     element.setAttribute('aria-label', `Pojedene figure: ${capturedPieces[color].length}`);
@@ -406,7 +467,11 @@ function renderCapturedPieces() {
   renderFor('b', blackCapturesElement);
 }
 
+/** Primeni potez na pravoj tabli, promeni stranu na potezu i odgovori AI-jem. */
+// === Obrada poteza i klikova ===
+// Ovaj blok primenjuje poteze, menja stranu na potezu i obrađuje interakciju.
 function finishMove(from, move) {
+  // Ažuriraj uzimanje, specijalan potez, red na potezu i prikaz; po potrebi pozovi AI.
   const movedPiece = board[from.row][from.column];
   const capturedPiece = move.enPassant ? board[from.row][move.column] : board[move.row][move.column];
   if (capturedPiece) capturedPieces[movedPiece.color].push({ ...capturedPiece });
@@ -427,6 +492,7 @@ function finishMove(from, move) {
     statusElement.textContent = 'Računar razmišlja…';
     renderBoard();
     const currentGame = gameSerial;
+    // Odloži AI potez kratko radi prikaza poruke, uz zaštitu od zastarele partije.
     window.setTimeout(() => {
       if (currentGame !== gameSerial || gameOver) return;
       const computerMove = chooseComputerMove();
@@ -436,7 +502,9 @@ function finishMove(from, move) {
   }
 }
 
+/** Obradi izbor polja: bira figuru ili odigrava izabrani legalni potez. */
 function handleSquareClick(row, column) {
+  // Prvi klik bira svoju figuru; sledeći klik bira legalno odredišno polje.
   if (gameOver || aiThinking || (gameMode === 'computer' && turn === 'b')) return;
   const clickedMove = selectedMoves.find(move => move.row === row && move.column === column);
   if (selectedSquare && clickedMove) {
@@ -455,7 +523,11 @@ function handleSquareClick(row, column) {
   renderBoard();
 }
 
+/** Kreira 64 klikabilna dugmeta table i sačuva ih po koordinatama. */
+// === Kreiranje elemenata i pokretanje partije ===
+// Tablu pravimo jednom; nova partija ponovo koristi ista polja.
 function createBoardElements() {
+  // Jednom napravi 64 klikabilna polja i poveži svako sa koordinatama table.
   for (let row = 0; row < 8; row += 1) {
     const rowElements = [];
     for (let column = 0; column < 8; column += 1) {
@@ -463,6 +535,7 @@ function createBoardElements() {
       square.type = 'button';
       square.className = `square ${(row + column) % 2 === 0 ? 'light-square' : 'dark-square'}`;
       square.setAttribute('role', 'gridcell');
+      // Click callback veže svako dugme za njegove red/kolona koordinate.
       square.addEventListener('click', () => handleSquareClick(row, column));
       boardElement.append(square);
       rowElements.push(square);
@@ -471,7 +544,9 @@ function createBoardElements() {
   }
 }
 
+/** Očisti tajmer i promenljive partije pa iscrta novu početnu poziciju. */
 function newGame() {
+  // Resetuj sat i sve stanje partije, pa iscrtaj novu početnu poziciju.
   stopTimer();
   gameSerial += 1;
   board = createInitialBoard();
@@ -489,12 +564,15 @@ function newGame() {
   renderCapturedPieces();
 }
 
+// Callback pokreće novu poziciju i resetuje tajmer.
 newGameButton.addEventListener('click', () => {
   newGame();
   startTimer();
 });
+// Callback-i izbora režima pokreću igru za dva čoveka ili protiv računara.
 twoPlayerModeButton.addEventListener('click', () => startGame('pvp'));
 computerModeButton.addEventListener('click', () => startGame('computer'));
+// Callback za promenu režima zaustavlja tajmer i odbacuje zakašnjeli AI potez.
 changeModeButton.addEventListener('click', () => {
   stopTimer();
   gameSerial += 1;
@@ -503,6 +581,8 @@ changeModeButton.addEventListener('click', () => {
   modeScreen.hidden = false;
 });
 
+// Izabrani režim određuje protivnika, imena i uputstvo pre početka partije.
+/** Postavlja imena, boje i poruku prema režimu, pa započinje novu partiju. */
 function startGame(mode) {
   gameMode = mode;
   whitePlayerName.textContent = hubWhiteName || 'Igrač 1';

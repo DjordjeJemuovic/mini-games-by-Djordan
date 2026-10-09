@@ -1,7 +1,10 @@
+"""Desktop igra vešanja za dva igrača, napravljena pomoću Tkinter-a."""
+
 import tkinter as tk
 from tkinter import messagebox
 
 
+# Paleta boja koju dele svi prozori i dugmad u igri.
 BACKGROUND = "#10131d"
 PANEL = "#171c29"
 SURFACE = "#20283a"
@@ -14,28 +17,36 @@ MAX_MISSES = 6
 
 
 class HangmanGame:
+    """Objekat igre koji čuva stanje i gradi/menja Tkinter ekrane."""
+
+    # Sačuvaj glavni prozor, početni rezultat i prikaži ekran za unos.
     def __init__(self, root):
         self.root = root
         self.root.title("Vešanje | Mini Games by Djordan")
         self.root.configure(bg=BACKGROUND)
         self.root.minsize(760, 620)
         self.root.geometry("900x720")
+        # Ove vrednosti važe za ceo život prozora i opstaju između rundi.
         self.round_number = 0
         self.scores = {"one": 0, "two": 0}
         self.show_setup()
 
+    # Ukloni trenutne kontrole da bi isti prozor mogao da prikaže novi ekran.
     def clear(self):
         for child in self.root.winfo_children():
             child.destroy()
 
+    # Napravi panel sa podrazumevanom pozadinskom bojom aplikacije.
     def frame(self, parent, **kwargs):
         return tk.Frame(parent, bg=kwargs.pop("bg", PANEL), **kwargs)
 
+    # Napravi tekstualnu oznaku koristeći podrazumevani stil igre.
     def label(self, parent, text, **kwargs):
         options = {"bg": PANEL, "fg": TEXT, "font": ("Segoe UI", 12)}
         options.update(kwargs)
         return tk.Label(parent, text=text, **options)
 
+    # Napravi dugme u zajedničkom stilu i poveži ga sa funkcijom.
     def button(self, parent, text, command, **kwargs):
         return tk.Button(
             parent, text=text, command=command, bg=ACCENT, fg=BACKGROUND,
@@ -44,8 +55,10 @@ class HangmanGame:
             cursor="hand2", **kwargs
         )
 
+    # Prikaži formu u kojoj se zadaju imena, zagonetka i tajna reč.
     def show_setup(self):
         self.clear()
+        # Svaki ekran se pravi iznova u istom glavnom prozoru.
         outer = self.frame(self.root, padx=36, pady=28)
         outer.pack(fill="both", expand=True, padx=24, pady=24)
         self.label(outer, "MINI GAMES BY DJORDAN", fg=ACCENT, font=("Segoe UI", 10, "bold")).pack(anchor="w")
@@ -62,6 +75,7 @@ class HangmanGame:
         self.button(outer, "Zadaj reč", self.start_handoff).pack(anchor="e", pady=(18, 0))
         self.label(outer, "Pogađač ima 6 pokušaja. Koriste se slova latinice, uključujući Č, Ć, Š, Ž i Đ. Razmaci i crtice se otkrivaju automatski.", fg=MUTED, font=("Segoe UI", 10), wraplength=740, justify="left").pack(anchor="w", side="bottom", pady=(24, 0))
 
+    # Dodaj naslov i polje za unos; placeholder se briše pri prvom fokusu.
     def add_field(self, parent, caption, placeholder):
         group = self.frame(parent, bg=SURFACE)
         group.pack(fill="x", pady=7)
@@ -69,19 +83,24 @@ class HangmanGame:
         entry = tk.Entry(group, font=("Segoe UI", 12), bg=BACKGROUND, fg=TEXT, insertbackground=TEXT, relief="flat")
         entry.pack(fill="x", ipady=9)
         entry.insert(0, placeholder)
+        # Prosleđivanje widget-a i teksta kao lambda argumenata izbegava kasno vezivanje.
         entry.bind("<FocusIn>", lambda _event, widget=entry, hint=placeholder: self.clear_hint(widget, hint))
         return entry
 
+    # Ukloni početni tekst iz polja samo ako ga igrač nije izmenio.
     @staticmethod
     def clear_hint(entry, hint):
         if entry.get() == hint:
             entry.delete(0, "end")
 
+    # Proveri unose, pripremi skrivenu reč i prikaži ekran za predaju uređaja.
     def start_handoff(self):
+        # Čitaj vrednosti tek nakon slanja forme jer ih igrači mogu menjati.
         name_one = self.player_one.get().strip()
         name_two = self.player_two.get().strip()
         clue = self.clue_entry.get().strip()
         word = self.word_entry.get().strip()
+        # Placeholder tekst ne treba prihvatiti kao stvarno ime ili zagonetku.
         if name_one in ("", "Igrač 1") or name_two in ("", "Igrač 2"):
             messagebox.showwarning("Nedostaju imena", "Unesite imena oba igrača.", parent=self.root)
             return
@@ -93,13 +112,16 @@ class HangmanGame:
             return
         self.name_one, self.name_two = name_one, name_two
         self.clue = clue
+        # Normalizuj slova da bi poređenje bilo nezavisno od velikih/malih slova.
         self.word = word.upper()
+        # Zadrži razmake i znakove, a samo slova zameni praznim mestima.
         self.hint = " ".join("_" if char.isalpha() else char for char in self.word)
         self.guessed = set()
         self.misses = 0
         self.round_number += 1
         self.show_handoff()
 
+    # Sakrij reč i traži od prvog igrača da preda ekran drugom.
     def show_handoff(self):
         self.clear()
         outer = self.frame(self.root, padx=40, pady=40)
@@ -109,8 +131,10 @@ class HangmanGame:
         self.label(outer, f"{self.name_one}, predaj ekran {self.name_two}.\nTajna reč će sada biti sakrivena.", fg=MUTED, font=("Segoe UI", 14), justify="left").pack(anchor="w", pady=(0, 28))
         self.button(outer, "Predao sam ekran — počni", self.start_round).pack(anchor="w")
 
+    # Prikaži zagonetku, skrivena slova, tastaturu i crtež vešala.
     def start_round(self):
         self.clear()
+        # Leva strana je crtež, desna sadrži reč, greške i tastaturu.
         outer = self.frame(self.root, padx=24, pady=20)
         outer.pack(fill="both", expand=True, padx=18, pady=18)
         header = self.frame(outer)
@@ -137,13 +161,18 @@ class HangmanGame:
         self.status_label = self.label(right, "Izaberi slovo.", fg=MUTED, wraplength=500, justify="left")
         self.status_label.pack(anchor="w", pady=(14, 0))
 
+    # Napravi dugme za svako slovo latinice koje igra može da pogodi.
     def build_keyboard(self):
         letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZČĆŠŽĐ"
         for index, letter in enumerate(letters):
+            # Podrazumevani argument čuva slovo namenjeno baš ovom dugmetu.
             button = tk.Button(self.keyboard, text=letter, width=3, command=lambda char=letter: self.guess(char), bg=SURFACE, fg=TEXT, activebackground=ACCENT, activeforeground=BACKGROUND, relief="flat", font=("Segoe UI", 11, "bold"), cursor="hand2")
+            # Računaj red/kolonu da tastatura ima po sedam dugmadi u redu.
             button.grid(row=index // 7, column=index % 7, padx=3, pady=3, ipadx=2, ipady=5)
 
+    # Obradi slovo, ažuriraj broj grešaka/reč i proveri kraj runde.
     def guess(self, letter):
+        # Zaštita od ponovnog klika i ponovljenog poziva funkcije.
         if letter in self.guessed:
             return
         self.guessed.add(letter)
@@ -151,6 +180,7 @@ class HangmanGame:
             if button.cget("text") == letter:
                 button.configure(state="disabled", bg="#30394f", fg=MUTED)
                 break
+        # Pogodak ne dodaje grešku; promašaj dodaje jednu i crta sledeći deo.
         if letter in self.word:
             self.status_label.configure(text=f"Slovo {letter} je u reči!", fg=SUCCESS)
         else:
@@ -158,22 +188,27 @@ class HangmanGame:
             self.misses_label.configure(text=f"Greške: {self.misses} / {MAX_MISSES}", fg=ERROR if self.misses >= MAX_MISSES - 1 else MUTED)
             self.status_label.configure(text=f"Slovo {letter} nije u reči.", fg=ERROR)
             self.draw_hangman()
+        # Otkrij sva ponavljanja već pogođenog slova u reči.
         self.hint = " ".join(char if not char.isalpha() or char in self.guessed else "_" for char in self.word)
         self.word_label.configure(text=self.hint)
+        # Proveri da li je reč rešena; ako nije, poslednja greška gubi rundu.
         if all(not char.isalpha() or char in self.guessed for char in self.word):
             self.finish_round(won=True)
         elif self.misses >= MAX_MISSES:
             self.finish_round(won=False)
 
+    # Iscrtaj osnovna vešala i onoliko delova figure koliko je promašaja.
     def draw_hangman(self):
         canvas = self.canvas
         canvas.delete("all")
         wood = "#aeb8d0"
+        # Osnovna konstrukcija ostaje vidljiva tokom cele runde.
         canvas.create_line(35, 250, 190, 250, fill=wood, width=5)
         canvas.create_line(75, 250, 75, 35, fill=wood, width=5)
         canvas.create_line(75, 35, 185, 35, fill=wood, width=5)
         canvas.create_line(185, 35, 185, 65, fill=wood, width=4)
         color = ERROR
+        # Delovi se dodaju po redosledu grešaka: glava, trup, ruke, noge.
         parts = [
             lambda: canvas.create_oval(165, 65, 205, 105, outline=color, width=4),
             lambda: canvas.create_line(185, 105, 185, 165, fill=color, width=4),
@@ -185,6 +220,7 @@ class HangmanGame:
         for draw_part in parts[:self.misses]:
             draw_part()
 
+    # Zaključa slova, dodeli pobedu i prikaže rezultat cele sesije.
     def finish_round(self, won):
         for button in self.keyboard.winfo_children():
             button.configure(state="disabled")
@@ -202,6 +238,7 @@ class HangmanGame:
         self.button(self.root, "Nova runda", self.show_setup).pack(pady=(0, 18))
 
 
+# Kreiraj Tkinter prozor, napravi igru i pokreni glavni event loop.
 def main():
     root = tk.Tk()
     HangmanGame(root)

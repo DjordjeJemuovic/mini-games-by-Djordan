@@ -11,7 +11,29 @@
 </head>
 <body>
   <main class="app-shell">
-    <section id="players-screen" class="screen">
+    <section id="account-screen" class="screen account-screen">
+      <p class="eyebrow">Tvoj prostor za igru</p>
+      <div class="brand-lockup">
+        <img class="brand-icon" src="./assets/images/game-controller.svg" alt="" aria-hidden="true">
+        <h1>Mini Games<br>by Djordan</h1>
+      </div>
+      <p class="intro">Prijavi se ili napravi nalog da nastavis do svojih igara.</p>
+      <div class="account-tabs" role="tablist" aria-label="Izbor naloga">
+        <button class="account-tab is-active" type="button" role="tab" aria-selected="true" data-account-mode="login">Prijava</button>
+        <button class="account-tab" type="button" role="tab" aria-selected="false" data-account-mode="register">Novi nalog</button>
+      </div>
+      <form id="account-form" class="account-form">
+        <label for="account-name">Korisnicko ime</label>
+        <input id="account-name" name="accountName" autocomplete="username" placeholder="Na primer: Djordje" required>
+        <label for="account-password">Lozinka</label>
+        <input id="account-password" name="accountPassword" type="password" autocomplete="current-password" placeholder="Unesi lozinku" required>
+        <p class="account-note">Prikaz naloga je vizuelni prototip. Podaci se jos ne cuvaju niti proveravaju.</p>
+        <button class="primary-button" type="submit">Nastavi</button>
+      </form>
+      <button id="guest-entry" class="text-button" type="button">Nastavi bez naloga</button>
+    </section>
+
+    <section id="players-screen" class="screen" hidden>
       <p class="eyebrow">Dobro došli</p>
       <div class="brand-lockup">
         <img class="brand-icon" src="./assets/images/game-controller.svg" alt="" aria-hidden="true">
@@ -56,6 +78,7 @@
       <p class="eyebrow">Izaberite igru</p>
       <h1>Šta igramo?</h1>
       <p id="welcome-message" class="intro"></p>
+      <div class="account-chip"><span class="account-avatar" aria-hidden="true">♟</span><span><small>NALOG</small><strong id="account-display-name">Gost</strong></span><button id="account-menu-button" class="text-button" type="button">Profil</button></div>
       <div class="games-list">
         <button class="game-card" type="button" data-game="iks-oks">
           <span class="game-icon" aria-hidden="true">⭕</span>
@@ -77,8 +100,14 @@
           <span class="game-info"><strong>Vešanje</strong><small>Jedan igrač zadaje reč, drugi pogađa</small></span>
           <span class="arrow" aria-hidden="true">→</span>
         </button>
+        <button class="game-card" type="button" data-game="tetris" data-game-path="../tetris/web/index.html">
+          <span class="game-icon" aria-hidden="true">▦</span>
+          <span class="game-info"><strong>Tetris</strong><small>Složi redove i osvoji 5000 poena</small></span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </button>
       </div>
       <button id="change-players" class="secondary-button" type="button">Promeni imena i boje</button>
+      <button id="logout-account" class="text-button" type="button">Odjavi se / pocetni ekran</button>
     </section>
   </main>
 </body>

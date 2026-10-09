@@ -2,6 +2,8 @@
 
 Glavni meni za mini-igre. Unesi imena i boje igrača, izaberi igru i ona će se otvoriti sa tim podacima.
 
+Za objašnjenje JavaScript i Python fajlova pogledaj [CODE-GUIDE.md](../CODE-GUIDE.md).
+
 ## Pokretanje
 
 Pokreni `Start-Mini-Games.bat` iz glavnog foldera da otvoriš desktop meni. Iz njega možeš pokrenuti browser igre ili samostalno Python vešanje. Za direktno otvaranje glavnog menija, otvori `index.html` u pregledaču.
@@ -12,6 +14,7 @@ Pokreni `Start-Mini-Games.bat` iz glavnog foldera da otvoriš desktop meni. Iz n
 - `../papir-kamen-makaze/` — 1v1 ili igra protiv računara, sa opcionalnim turnirom do pet osvojenih rundi.
 - `../simple-sah/` — šah 1v1 ili protiv računara, sa tajmerom od 15 minuta.
 - `../vesanje/` — igra vešanja za dva igrača; jedan zadaje zagonetku i reč, drugi pogađa slova.
+- `../tetris/` — samostalna Python desktop igra. Pokreće se iz desktop pokretača.
 
 Glavni meni prosleđuje imena i boje kroz URL parametre. U iks-oksu se nakon izbora režima igra odmah pokreće sa tim imenima i bojama; u papir-kamen-makazama se imena prikazuju u izabranom režimu. Svaka igra može da se pokrene i samostalno.
 

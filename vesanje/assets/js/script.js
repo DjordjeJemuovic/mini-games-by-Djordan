@@ -1,3 +1,5 @@
+// === Podešavanja i podaci o igračima ===
+// Browser verzija vešanja. Podaci o igračima stižu iz glavnog menija kroz URL.
 const params = new URLSearchParams(window.location.search);
 const playerOne = params.get('player1')?.trim() || 'Igrač 1';
 const playerTwo = params.get('player2')?.trim() || 'Igrač 2';
@@ -21,19 +23,30 @@ let secret = '';
 let clue = '';
 let guessed = new Set();
 let mistakes = 0;
+// === Stanje runde i rezultat ===
+// Rezultat važi dok je ova stranica otvorena i prenosi se između novih rundi.
 const score = { one: 0, two: 0 };
 
+// === Upravljanje ekranima i prikazom ===
+// Prikaži tačno jedan korak igre; sekcije su definisane u HTML-u.
+/** Prikazuje jednu fazu igre i skriva ostale ekrane. */
 function showScreen(name) {
   Object.entries(screens).forEach(([key, screen]) => { screen.hidden = key !== name; });
 }
 
+/** Izgradi prikaz skrivene reči na osnovu do sada pogođenih slova. */
 function displayWord() {
+  // Sakrij neotkrivena slova, ali ostavi razmake i interpunkciju vidljivim.
   document.querySelector('#word-display').textContent = [...secret]
     .map(char => /[\p{L}\p{N}]/u.test(char) ? (guessed.has(char) ? char : '_') : char)
     .join(' ');
 }
 
+// === Crtanje figure ===
+// Canvas iscrtava delove figure na osnovu broja pogrešnih slova.
+/** Iscrta statična vešala i deo figure koji odgovara broju promašaja. */
 function drawHangman() {
+  // Vešala su stalna pozadina; svaki promašaj doda sledeći deo figure.
   context.clearRect(0, 0, canvas.width, canvas.height);
   context.lineWidth = 5;
   context.lineCap = 'round';
@@ -55,7 +68,11 @@ function drawHangman() {
   parts.slice(0, mistakes).forEach(draw => draw());
 }
 
+// === Pravila poteza i kraj runde ===
+// Ove funkcije otkrivaju slova, broje greške i odlučuju pobednika.
+/** Zaključa tastaturu, dodeli poen i prikaže ekran sa ishodom runde. */
 function endRound(won) {
+  // Zaključa tastaturu, dodeli pobedu i prikaže rezime runde.
   document.querySelectorAll('#keyboard button').forEach(button => { button.disabled = true; });
   if (won) {
     score.two += 1;
@@ -70,7 +87,9 @@ function endRound(won) {
   showScreen('result');
 }
 
+/** Obradi slovo, promeni model i ekran, pa proveri uslov kraja runde. */
 function chooseLetter(letter, button) {
+  // Zabeleži izabrano slovo, ažuriraj crtež i proveri pobedu ili šest grešaka.
   if (guessed.has(letter) || mistakes >= maxMistakes) return;
   guessed.add(letter);
   button.disabled = true;
@@ -91,7 +110,10 @@ function chooseLetter(letter, button) {
   else if (mistakes >= maxMistakes) endRound(false);
 }
 
+// === Pokretanje nove runde i događaji interfejsa ===
+// Callback forme validira početne podatke i vodi igrače na ekran predaje uređaja.
 form.addEventListener('submit', event => {
+  // Sačuvaj zagonetku i tajnu reč, pa prvo prikaži ekran za predaju uređaja.
   event.preventDefault();
   clue = clueInput.value.trim();
   secret = secretInput.value.trim().toLocaleUpperCase('sr-Latn');
@@ -100,7 +122,9 @@ form.addEventListener('submit', event => {
   showScreen('handoff');
 });
 
+// Callback za početak runde pravi tastaturu i priprema stanje igre za pogađanje.
 document.querySelector('#start-game').addEventListener('click', () => {
+  // Započni novu rundu i napravi dugme za svako podržano slovo.
   guessed = new Set();
   mistakes = 0;
   document.querySelector('#players-line').textContent = `${playerOne} zadaje · ${playerTwo} pogađa`;
@@ -117,6 +141,7 @@ document.querySelector('#start-game').addEventListener('click', () => {
     button.type = 'button';
     button.textContent = letter;
     button.setAttribute('aria-label', `Slovo ${letter}`);
+    // Click callback predaje izabrano slovo logici poteza.
     button.addEventListener('click', () => chooseLetter(letter, button));
     keyboard.append(button);
   });
@@ -125,7 +150,9 @@ document.querySelector('#start-game').addEventListener('click', () => {
   showScreen('game');
 });
 
+// Callback za novu rundu očisti polja, ali zadrži igrače i tekući skor.
 document.querySelector('#new-round').addEventListener('click', () => {
+  // Očisti polja za novu reč, ali zadrži imena igrača i trenutni rezultat.
   form.reset();
   showScreen('setup');
   clueInput.focus();

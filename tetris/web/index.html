@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="sr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10131d">
+  <title>Tetris | Mini Games by Djordan</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./script.js" defer></script>
+</head>
+<body>
+  <main class="tetris-app">
+    <a class="back-link" href="../../mini-games/index.html">← Izbor igara</a>
+    <header class="game-heading">
+      <div><p class="eyebrow">Mini Games by Djordan</p><h1>Tetris</h1></div>
+      <p id="player-name" class="player-name"></p>
+    </header>
+    <form id="setup-form" class="setup-panel">
+      <label for="tetris-player">Ime igrača</label>
+      <input id="tetris-player" maxlength="24" required>
+      <fieldset>
+        <legend>Izaberi početni nivo (cilj: 5000 poena)</legend>
+        <label><input type="radio" name="startLevel" value="1" checked> Nivo 1</label>
+        <label><input type="radio" name="startLevel" value="2"> Nivo 2</label>
+        <label><input type="radio" name="startLevel" value="3"> Nivo 3</label>
+        <label><input type="radio" name="startLevel" value="4"> Nivo 4</label>
+        <label><input type="radio" name="startLevel" value="5"> Nivo 5</label>
+      </fieldset>
+      <button class="start-button" type="submit">Zapocni igru</button>
+    </form>
+    <section id="game-content" hidden>
+    <section class="game-layout" aria-label="Tetris igra">
+      <div class="board-wrap"><canvas id="board" width="300" height="600" aria-label="Tetris tabla"></canvas></div>
+      <aside class="side-panel">
+        <p class="panel-title">SLEDEĆA FIGURA</p>
+        <canvas id="preview" width="150" height="100" aria-label="Pregled sledeće figure"></canvas>
+        <div class="stat"><span>Skor</span><strong id="score">0 / 5000</strong></div>
+        <div class="stat"><span>Redovi</span><strong id="lines">0</strong></div>
+        <div class="stat"><span>Nivo</span><strong id="level">1 / 5</strong></div>
+        <p id="target" class="target">Sledeći nivo: 1000</p>
+        <p id="status" class="status" aria-live="polite"></p>
+        <div class="controls"><span>← → <small>pomeranje</small></span><span>Klik <small>rotacija</small></span><span>Space <small>brže padanje</small></span><span>R <small>nova igra</small></span></div>
+      </aside>
+    </section>
+    <div class="mobile-controls" aria-label="Kontrole igre">
+      <button type="button" data-action="left" aria-label="Levo">←</button>
+      <button type="button" data-action="rotate" aria-label="Rotiraj">↻</button>
+      <button type="button" data-action="right" aria-label="Desno">→</button>
+      <button type="button" data-action="drop" aria-label="Ubrzaj padanje">↓</button>
+    </div>
+    <nav id="result-actions" class="result-actions" aria-label="Opcije igre">
+      <button id="play-again" class="start-button" type="button">Igraj ponovo</button>
+      <a id="games-menu-link" class="menu-button" href="../../mini-games/index.html">Izbor igara</a>
+    </nav>
+    </section>
+  </main>
+</body>
+</html>
