@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="sr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10131d">
+  <title>Simple šah</title>
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <script src="./assets/js/script.js" defer></script>
+</head>
+<body>
+  <a id="hub-link" class="hub-link" href="../mini-games/index.html">← Izbor igara</a>
+  <a class="hub-link home-link" href="../mini-games/index.html">⌂ Početni ekran · unesi imena</a>
+  <main class="game-shell">
+    <section id="mode-screen" class="mode-screen">
+      <p class="eyebrow">Mini igra</p>
+      <h1>Simple šah</h1>
+      <p class="intro">Izaberite režim igre.</p>
+      <div class="mode-options">
+        <button id="two-player-mode" class="mode-button" type="button">
+          <strong>1v1</strong>
+          <span>Dva igrača igraju na istom uređaju.</span>
+        </button>
+        <button id="computer-mode" class="mode-button" type="button">
+          <strong>Protiv računara</strong>
+          <span>Igraj belima protiv računara.</span>
+        </button>
+      </div>
+    </section>
+
+    <section id="game-screen" hidden>
+      <header class="heading">
+        <p class="eyebrow">Mini igra</p>
+        <h1>Simple šah</h1>
+        <p id="game-instructions" class="intro">Partija šaha za dva igrača.</p>
+      </header>
+
+      <div class="game-bar">
+        <p id="status" class="status" aria-live="polite">Na potezu je beli.</p>
+        <div class="timer-display" role="timer" aria-label="Preostalo vreme partije">
+          <span>Preostalo vreme</span>
+          <strong id="timer">15:00</strong>
+        </div>
+      </div>
+      <div class="match-layout">
+      <div id="white-player" class="player-card active">
+        <span class="side-icon white-side" aria-hidden="true">♔</span>
+        <span class="side-label">Beli</span>
+        <div class="player-details">
+          <span id="white-captures" class="captured-pieces" aria-label="Pojedene crne figure"></span>
+          <strong id="white-player-name">Igrač 1</strong>
+        </div>
+      </div>
+      <div id="board" class="board" role="grid" aria-label="Šahovska tabla"></div>
+      <div id="black-player" class="player-card">
+        <span class="side-icon black-side" aria-hidden="true">♚</span>
+        <span class="side-label">Crni</span>
+        <div class="player-details">
+          <span id="black-captures" class="captured-pieces" aria-label="Pojedene bele figure"></span>
+          <strong id="black-player-name">Igrač 2</strong>
+        </div>
+      </div>
+      </div>
+      <div class="actions">
+        <button id="new-game" class="primary-button" type="button">Nova partija</button>
+        <button id="change-mode" class="secondary-button" type="button">Promeni režim</button>
+      </div>
+      <p class="rules-note">Potezi se menjaju naizmenično. Pešak koji stigne do kraja table automatski postaje dama.</p>
+    </section>
+  </main>
+</body>
+</html>

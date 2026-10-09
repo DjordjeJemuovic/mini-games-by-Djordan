@@ -1,0 +1,106 @@
+﻿<!doctype html>
+<html lang="sr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Iks-Oks</title>
+  <link rel="stylesheet" href="./assets/css/style.css">
+</head>
+<body>
+  <a id="hub-link" class="hub-link" href="../mini-games/index.html">← Izbor igara</a>
+  <a class="hub-link home-link" href="../mini-games/index.html">⌂ Početni ekran · unesi imena</a>
+  <main class="game">
+    <section id="mode-screen" class="screen mode-screen">
+      <h1>Iks-Oks</h1>
+      <p class="intro">Izaberite režim igre.</p>
+      <div class="mode-options">
+        <button id="solo-mode" class="mode-button" type="button">
+          <strong>Solo partija</strong>
+          <span>Odigrate jednu partiju.</span>
+        </button>
+        <button id="tournament-mode" class="mode-button tournament-choice" type="button">
+          <strong>Turnir od 5</strong>
+          <span>Prvi igrač koji osvoji 5 partija pobeđuje.</span>
+        </button>
+      </div>
+      <fieldset class="terrain-picker">
+        <legend>Boja terena</legend>
+        <label class="terrain-option" aria-label="Tamnoplava"><input type="radio" name="terrainColor" value="#14213d" checked><span style="--swatch: #14213d"></span></label>
+        <label class="terrain-option" aria-label="Tamnozelena"><input type="radio" name="terrainColor" value="#173326"><span style="--swatch: #173326"></span></label>
+        <label class="terrain-option" aria-label="Bordo"><input type="radio" name="terrainColor" value="#3a1828"><span style="--swatch: #3a1828"></span></label>
+        <label class="terrain-option" aria-label="Ugalj"><input type="radio" name="terrainColor" value="#24242b"><span style="--swatch: #24242b"></span></label>
+        <label class="terrain-option" aria-label="Tamnov ljubičasta"><input type="radio" name="terrainColor" value="#2b1d3d"><span style="--swatch: #2b1d3d"></span></label>
+        <label class="terrain-option" aria-label="Tamni petrolej"><input type="radio" name="terrainColor" value="#15343a"><span style="--swatch: #15343a"></span></label>
+        <label class="terrain-option" aria-label="Tamnosmeđa"><input type="radio" name="terrainColor" value="#39291b"><span style="--swatch: #39291b"></span></label>
+        <label class="terrain-option" aria-label="Škriljac"><input type="radio" name="terrainColor" value="#263344"><span style="--swatch: #263344"></span></label>
+        <label class="terrain-option" aria-label="Ponoćna"><input type="radio" name="terrainColor" value="#172033"><span style="--swatch: #172033"></span></label>
+        <label class="terrain-option" aria-label="Borova"><input type="radio" name="terrainColor" value="#233528"><span style="--swatch: #233528"></span></label>
+      </fieldset>
+      <button id="show-records" class="secondary-button" type="button">Pogledaj rekorde</button>
+    </section>
+    <section id="setup-screen" class="screen" hidden>
+      <h1>Imena igrača</h1>
+      <p class="intro">Unesite imena i započnite partiju.</p>
+      <form id="player-form" class="player-form">
+        <label for="player-x">Ime igrača X</label>
+        <input id="player-x" name="playerX" autocomplete="given-name" maxlength="24" required>
+        <fieldset class="color-picker">
+          <legend>Boja znaka X</legend>
+          <label class="color-option" aria-label="Tirkizna"><input type="radio" name="colorX" value="#7dd3fc" checked><span style="--swatch: #7dd3fc"></span></label>
+          <label class="color-option" aria-label="Ružičasta"><input type="radio" name="colorX" value="#fb7185"><span style="--swatch: #fb7185"></span></label>
+          <label class="color-option" aria-label="Zelena"><input type="radio" name="colorX" value="#4ade80"><span style="--swatch: #4ade80"></span></label>
+          <label class="color-option" aria-label="Žuta"><input type="radio" name="colorX" value="#facc15"><span style="--swatch: #facc15"></span></label>
+          <label class="color-option" aria-label="Ljubičasta"><input type="radio" name="colorX" value="#c084fc"><span style="--swatch: #c084fc"></span></label>
+        </fieldset>
+        <label for="player-o">Ime igrača O</label>
+        <input id="player-o" name="playerO" autocomplete="off" maxlength="24" required>
+        <fieldset class="color-picker">
+          <legend>Boja znaka O</legend>
+          <label class="color-option" aria-label="Tirkizna"><input type="radio" name="colorO" value="#7dd3fc"><span style="--swatch: #7dd3fc"></span></label>
+          <label class="color-option" aria-label="Ružičasta"><input type="radio" name="colorO" value="#fb7185" checked><span style="--swatch: #fb7185"></span></label>
+          <label class="color-option" aria-label="Zelena"><input type="radio" name="colorO" value="#4ade80"><span style="--swatch: #4ade80"></span></label>
+          <label class="color-option" aria-label="Žuta"><input type="radio" name="colorO" value="#facc15"><span style="--swatch: #facc15"></span></label>
+          <label class="color-option" aria-label="Ljubičasta"><input type="radio" name="colorO" value="#c084fc"><span style="--swatch: #c084fc"></span></label>
+        </fieldset>
+        <button class="restart" type="submit">Počni igru</button>
+      </form>
+      <button id="back-to-modes" class="secondary-button" type="button">Nazad na izbor režima</button>
+    </section>
+    <section id="game-screen" class="screen" hidden>
+      <h1>Iks-Oks</h1>
+      <p id="status" aria-live="polite"></p>
+      <p id="tournament-status" class="tournament-status" aria-live="polite" hidden></p>
+      <section class="board" aria-label="Tabla za iks-oks" aria-disabled="true">
+      <button class="cell" aria-label="Polje 1"></button>
+      <button class="cell" aria-label="Polje 2"></button>
+      <button class="cell" aria-label="Polje 3"></button>
+      <button class="cell" aria-label="Polje 4"></button>
+      <button class="cell" aria-label="Polje 5"></button>
+      <button class="cell" aria-label="Polje 6"></button>
+      <button class="cell" aria-label="Polje 7"></button>
+      <button class="cell" aria-label="Polje 8"></button>
+      <button class="cell" aria-label="Polje 9"></button>
+      </section>
+      <button id="restart" class="restart" type="button">Nova igra</button>
+    </section>
+    <section id="winner-screen" class="screen winner-screen" aria-live="polite" hidden>
+      <div class="confetti" aria-hidden="true">🎉</div>
+      <h1>Čestitamo!</h1>
+      <p id="congratulations" class="congratulations"></p>
+      <button id="play-again" class="restart" type="button">Igraj ponovo</button>
+    </section>
+    <section id="records-screen" class="screen records-screen" hidden>
+      <h1>Rekordi</h1>
+      <p class="intro">Broj pobeda za svaki par igrača.</p>
+      <div id="records-list" class="records-list" aria-live="polite"></div>
+      <div class="record-file-actions">
+        <button id="export-records" class="secondary-button" type="button">Preuzmi JSON</button>
+        <label class="secondary-button import-button" for="import-records">Uvezi JSON</label>
+        <input id="import-records" class="file-input" type="file" accept=".json,application/json">
+      </div>
+      <button id="back-to-setup" class="secondary-button" type="button">Nazad</button>
+    </section>
+  </main>
+  <script src="./assets/js/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="sr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10131d">
+  <title>Papir, kamen, makaze</title>
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <script src="./assets/js/script.js" defer></script>
+</head>
+<body>
+  <a id="hub-link" class="hub-link" href="../mini-games/index.html">← Izbor igara</a>
+  <a class="hub-link home-link" href="../mini-games/index.html">⌂ Početni ekran · unesi imena</a>
+  <main class="game">
+    <section id="mode-screen" class="mode-screen">
+      <p class="eyebrow">Mini igra</p>
+      <h1>Papir, kamen, makaze</h1>
+      <p class="intro">Izaberite kako želite da igrate.</p>
+      <div class="mode-options">
+        <button class="mode-button" type="button" data-mode="pvp">
+          <strong>1v1</strong>
+          <span>Dva igrača igraju na istom uređaju.</span>
+        </button>
+        <button class="mode-button tournament-mode" type="button" data-mode="pvp-tournament">
+          <strong>1v1 turnir do 5</strong>
+          <span>Prvi igrač sa 5 osvojenih rundi pobeđuje.</span>
+        </button>
+        <button class="mode-button" type="button" data-mode="computer">
+          <strong>1 protiv računara</strong>
+          <span>Izazovi računar u više rundi.</span>
+        </button>
+        <button class="mode-button tournament-mode" type="button" data-mode="computer-tournament">
+          <strong>Turnir protiv računara</strong>
+          <span>Prvi do 5 osvojenih rundi pobeđuje.</span>
+        </button>
+      </div>
+    </section>
+
+    <section id="game-screen" hidden>
+      <header class="heading">
+        <p class="eyebrow">Papir · Kamen · Makaze</p>
+        <h1 id="game-title">Igra</h1>
+        <p id="game-instructions" class="intro"></p>
+      </header>
+
+      <section class="scoreboard" aria-label="Rezultat">
+        <div class="score">
+          <span id="player-one-label" class="score-label">Igrač 1</span>
+          <strong id="player-one-score">0</strong>
+        </div>
+        <span class="score-divider" aria-hidden="true">:</span>
+        <div class="score">
+          <span id="player-two-label" class="score-label">Igrač 2</span>
+          <strong id="player-two-score">0</strong>
+        </div>
+      </section>
+
+      <section class="round" aria-live="polite" aria-atomic="true">
+        <p id="result" class="result">Izaberite potez.</p>
+        <div class="choice-display" aria-label="Izbori igrača">
+          <div class="choice-card">
+            <span id="choice-one-label" class="choice-player">Igrač 1</span>
+            <span id="choice-one-icon" class="choice-icon" aria-hidden="true">?</span>
+            <span id="choice-one-name" class="choice-name">Čeka izbor</span>
+          </div>
+          <div class="choice-card">
+            <span id="choice-two-label" class="choice-player">Igrač 2</span>
+            <span id="choice-two-icon" class="choice-icon" aria-hidden="true">?</span>
+            <span id="choice-two-name" class="choice-name">Čeka izbor</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="moves" aria-label="Izaberi potez">
+        <button class="move-button" type="button" data-move="kamen">
+          <span class="move-emoji" aria-hidden="true">✊</span><span>Kamen</span>
+        </button>
+        <button class="move-button" type="button" data-move="papir">
+          <span class="move-emoji" aria-hidden="true">✋</span><span>Papir</span>
+        </button>
+        <button class="move-button" type="button" data-move="makaze">
+          <span class="move-emoji" aria-hidden="true">✌️</span><span>Makaze</span>
+        </button>
+      </section>
+
+      <div class="game-actions">
+        <button id="new-game" class="reset-button" type="button">Nova igra</button>
+        <button id="change-mode" class="secondary-button" type="button">Promeni režim</button>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

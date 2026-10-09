@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="sr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10131d">
+  <title>Mini Games by Djordan</title>
+  <link rel="icon" href="./assets/images/game-controller.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <script src="./assets/js/script.js" defer></script>
+</head>
+<body>
+  <main class="app-shell">
+    <section id="players-screen" class="screen">
+      <p class="eyebrow">Dobro došli</p>
+      <div class="brand-lockup">
+        <img class="brand-icon" src="./assets/images/game-controller.svg" alt="" aria-hidden="true">
+        <h1>Mini Games by Djordan</h1>
+      </div>
+      <p class="intro">Unesite igrače i izaberite njihove boje pre igre.</p>
+
+      <form id="players-form">
+        <fieldset class="player-card">
+          <legend>Igrač 1</legend>
+          <label for="player-one-name">Ime</label>
+          <input id="player-one-name" name="playerOne" maxlength="24" autocomplete="given-name" required>
+          <fieldset class="color-picker">
+            <legend>Boja</legend>
+            <label class="color-option" aria-label="Tirkizna"><input type="radio" name="playerOneColor" value="#7dd3fc" checked><span style="--swatch: #7dd3fc"></span></label>
+            <label class="color-option" aria-label="Ružičasta"><input type="radio" name="playerOneColor" value="#fb7185"><span style="--swatch: #fb7185"></span></label>
+            <label class="color-option" aria-label="Zelena"><input type="radio" name="playerOneColor" value="#4ade80"><span style="--swatch: #4ade80"></span></label>
+            <label class="color-option" aria-label="Žuta"><input type="radio" name="playerOneColor" value="#facc15"><span style="--swatch: #facc15"></span></label>
+            <label class="color-option" aria-label="Ljubičasta"><input type="radio" name="playerOneColor" value="#c084fc"><span style="--swatch: #c084fc"></span></label>
+          </fieldset>
+        </fieldset>
+
+        <fieldset class="player-card">
+          <legend>Igrač 2</legend>
+          <label for="player-two-name">Ime</label>
+          <input id="player-two-name" name="playerTwo" maxlength="24" autocomplete="off" required>
+          <fieldset class="color-picker">
+            <legend>Boja</legend>
+            <label class="color-option" aria-label="Tirkizna"><input type="radio" name="playerTwoColor" value="#7dd3fc"><span style="--swatch: #7dd3fc"></span></label>
+            <label class="color-option" aria-label="Ružičasta"><input type="radio" name="playerTwoColor" value="#fb7185" checked><span style="--swatch: #fb7185"></span></label>
+            <label class="color-option" aria-label="Zelena"><input type="radio" name="playerTwoColor" value="#4ade80"><span style="--swatch: #4ade80"></span></label>
+            <label class="color-option" aria-label="Žuta"><input type="radio" name="playerTwoColor" value="#facc15"><span style="--swatch: #facc15"></span></label>
+            <label class="color-option" aria-label="Ljubičasta"><input type="radio" name="playerTwoColor" value="#c084fc"><span style="--swatch: #c084fc"></span></label>
+          </fieldset>
+        </fieldset>
+
+        <button class="primary-button" type="submit">Izaberi igru</button>
+      </form>
+    </section>
+
+    <section id="games-screen" class="screen" hidden>
+      <p class="eyebrow">Izaberite igru</p>
+      <h1>Šta igramo?</h1>
+      <p id="welcome-message" class="intro"></p>
+      <div class="games-list">
+        <button class="game-card" type="button" data-game="iks-oks">
+          <span class="game-icon" aria-hidden="true">⭕</span>
+          <span class="game-info"><strong>Iks-Oks</strong><small>Solo partija ili turnir do 5 pobeda</small></span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </button>
+        <button class="game-card" type="button" data-game="papir-kamen-makaze">
+          <span class="game-icon" aria-hidden="true">✊</span>
+          <span class="game-info"><strong>Papir, kamen, makaze</strong><small>1v1 ili protiv računara</small></span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </button>
+        <button class="game-card" type="button" data-game="simple-sah">
+          <span class="game-icon" aria-hidden="true">♟</span>
+          <span class="game-info"><strong>Simple šah</strong><small>Partija šaha za dva igrača</small></span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </button>
+        <button class="game-card" type="button" data-game="vesanje">
+          <span class="game-icon" aria-hidden="true">☠</span>
+          <span class="game-info"><strong>Vešanje</strong><small>Jedan igrač zadaje reč, drugi pogađa</small></span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </button>
+      </div>
+      <button id="change-players" class="secondary-button" type="button">Promeni imena i boje</button>
+    </section>
+  </main>
+</body>
+</html>

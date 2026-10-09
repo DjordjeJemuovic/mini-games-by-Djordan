@@ -1,0 +1,61 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #f4f6ff;
+  background: #10131d;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* { box-sizing: border-box; }
+body { display: grid; min-height: 100vh; margin: 0; padding: 24px; place-items: center; }
+button, input { font: inherit; }
+[hidden] { display: none !important; }
+
+.app-shell { width: min(100%, 560px); }
+.screen { padding: clamp(24px, 6vw, 42px); border: 1px solid #283249; border-radius: 28px; background: #171c29; box-shadow: 0 24px 80px #0005; }
+.eyebrow { margin: 0 0 8px; color: #7dd3fc; font-size: .8rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+h1 { margin: 0; font-size: clamp(2.2rem, 8vw, 3.1rem); line-height: 1.08; }
+.brand-lockup { display: flex; align-items: center; gap: 14px; }
+.brand-icon { width: 54px; height: 54px; flex: 0 0 54px; }
+.intro { margin: 12px 0 26px; color: #aeb8d0; line-height: 1.5; }
+
+#players-form { display: grid; gap: 16px; }
+.player-card { display: grid; gap: 10px; margin: 0; padding: 16px; border: 1px solid #30394f; border-radius: 18px; background: #101521; }
+.player-card > legend { padding: 0 8px; color: #7dd3fc; font-weight: 700; }
+.player-card > label { color: #aeb8d0; font-size: .92rem; }
+.player-card > input { width: 100%; padding: 11px 13px; border: 1px solid #30394f; border-radius: 10px; background: #1a2030; color: #f4f6ff; }
+.player-card > input:focus-visible { outline: 2px solid #7dd3fc; outline-offset: 2px; }
+.color-picker { display: flex; align-items: center; gap: 12px; margin: 0; padding: 0; border: 0; }
+.color-picker legend { width: 100%; margin-bottom: 7px; color: #aeb8d0; font-size: .9rem; }
+.color-option { position: relative; display: grid; place-items: center; cursor: pointer; }
+.color-option input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.color-option span { width: 28px; height: 28px; border: 3px solid #101521; border-radius: 50%; background: var(--swatch); box-shadow: 0 0 0 1px #59647b; }
+.color-option input:checked + span { box-shadow: 0 0 0 2px #f4f6ff; }
+.color-option input:focus-visible + span { outline: 2px solid #f4f6ff; outline-offset: 4px; }
+
+.primary-button, .secondary-button { padding: 12px 20px; border: 1px solid transparent; border-radius: 999px; font-weight: 700; cursor: pointer; }
+.primary-button { margin-top: 4px; background: #7dd3fc; color: #10131d; }
+.primary-button:hover { background: #a5e3ff; }
+.secondary-button { margin-top: 22px; border-color: #59647b; background: transparent; color: #f4f6ff; }
+.secondary-button:hover { background: #252e43; }
+.primary-button:focus-visible, .secondary-button:focus-visible, .game-card:focus-visible { outline: 3px solid #facc15; outline-offset: 3px; }
+
+.games-list { display: grid; gap: 14px; margin-top: 28px; }
+.game-card { display: flex; align-items: center; gap: 16px; width: 100%; padding: 18px; border: 1px solid #30394f; border-radius: 18px; background: #20283a; color: #f4f6ff; text-align: left; cursor: pointer; transition: transform .15s ease, border-color .15s ease, background .15s ease; }
+.game-card:hover { transform: translateY(-2px); border-color: #7dd3fc; background: #28354b; }
+.game-icon { display: grid; width: 48px; height: 48px; flex: 0 0 48px; place-items: center; border-radius: 14px; background: #101521; font-size: 1.6rem; }
+.game-info { display: grid; gap: 4px; flex: 1; }
+.game-info strong { font-size: 1.05rem; }
+.game-info small { color: #aeb8d0; line-height: 1.4; }
+.arrow { color: #7dd3fc; font-size: 1.4rem; }
+
+@media (max-width: 420px) {
+  body { padding: 14px; }
+  .screen { padding: 24px 18px; border-radius: 22px; }
+  .color-picker { gap: 9px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}

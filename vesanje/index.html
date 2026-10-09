@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="sr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10131d">
+  <title>Vešanje | Mini Games by Djordan</title>
+  <link rel="stylesheet" href="./assets/css/style.css">
+  <script src="./assets/js/script.js" defer></script>
+</head>
+<body>
+  <a class="nav-link" href="../mini-games/index.html">← Izbor igara</a>
+  <a class="nav-link home-link" href="../mini-games/index.html">⌂ Početni ekran · unesi imena</a>
+  <main class="game-shell">
+    <section id="setup-screen" class="panel">
+      <p class="eyebrow">Mini Games by Djordan</p>
+      <h1>Igra vešanja</h1>
+      <p class="intro">Jedan igrač zadaje tajnu reč i zagonetku, drugi pokušava da je otkrije.</p>
+      <form id="setup-form">
+        <label for="clue">Zagonetka ili opis</label>
+        <input id="clue" maxlength="100" placeholder="Na primer: Životinja koja voli med" required>
+        <label for="secret-word">Tajna reč <span>(predaj ekran drugom igraču pre početka)</span></label>
+        <input id="secret-word" maxlength="32" autocomplete="off" placeholder="Unesi skrivenu reč" required>
+        <button class="primary-button" type="submit">Zadaj reč</button>
+      </form>
+      <p class="note">Igrač 1 zadaje reč, a igrač 2 pogađa. Ima šest pokušaja.</p>
+    </section>
+
+    <section id="handoff-screen" class="panel" hidden>
+      <p class="eyebrow">Reč je zadata</p>
+      <h1 id="handoff-title">Predaj ekran</h1>
+      <p class="intro">Kada je drugi igrač spreman, započnite pogađanje. Tajna reč će biti sakrivena.</p>
+      <button id="start-game" class="primary-button" type="button">Predao sam ekran — počni</button>
+    </section>
+
+    <section id="game-screen" class="panel" hidden>
+      <p class="eyebrow" id="players-line"></p>
+      <h1 id="clue-display"></h1>
+      <div class="game-layout">
+        <canvas id="hangman" width="270" height="280" aria-label="Crtež vešala i figure"></canvas>
+        <div class="play-area">
+          <p id="word-display" class="word-display" aria-live="polite"></p>
+          <p id="mistakes-display" class="mistakes-display"></p>
+          <div id="keyboard" class="keyboard" aria-label="Izaberi slovo"></div>
+          <p id="game-status" class="game-status" aria-live="polite">Izaberi slovo.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="result-screen" class="panel result-panel" hidden aria-live="polite">
+      <p class="eyebrow">Kraj runde</p>
+      <h1 id="result-title"></h1>
+      <p id="result-message" class="intro"></p>
+      <p id="result-score" class="score"></p>
+      <button id="new-round" class="primary-button" type="button">Nova runda</button>
+    </section>
+  </main>
+</body>
+</html>
