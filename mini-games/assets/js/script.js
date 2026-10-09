@@ -16,6 +16,7 @@ const welcomeMessage = document.querySelector('#welcome-message');
 const changePlayersButton = document.querySelector('#change-players');
 const gameButtons = [...document.querySelectorAll('.game-card')];
 const launchParams = new URLSearchParams(window.location.search);
+const launcherMessage = document.querySelector('#launcher-message');
 
 // === Profil igrača i povratak iz igre ===
 // Ovo stanje deli forma sa izabranom igrom.
@@ -111,6 +112,28 @@ playersForm.addEventListener('submit', event => {
 gameButtons.forEach(button => {
   // Click callback prosleđuje podešavanja profila igri koju predstavlja kartica.
   button.addEventListener('click', () => {
+    if (button.dataset.launchGame === 'bilijar') {
+      if (window.location.protocol !== 'http:' || window.location.hostname !== '127.0.0.1') {
+        launcherMessage.hidden = false;
+        launcherMessage.textContent = 'Bilijar pokreni preko Start-Mini-Games.bat da bi se otvorio iz launchera.';
+        return;
+      }
+      launcherMessage.hidden = true;
+      fetch('/__launcher/launch/bilijar', {
+        method: 'POST',
+        headers: { 'X-Mini-Games-Launcher': '1' }
+      })
+        .then(response => {
+          if (!response.ok) throw new Error('Pokretanje nije uspelo.');
+          launcherMessage.hidden = false;
+          launcherMessage.textContent = 'Bilijar se pokreće u svom prozoru. Zatvori igru da se vratiš u launcher.';
+        })
+        .catch(() => {
+          launcherMessage.hidden = false;
+          launcherMessage.textContent = 'Bilijar nije pokrenut. Proveri Python i Pygame instalaciju.';
+        });
+      return;
+    }
     if (!players) return;
     const params = new URLSearchParams({
       player1: players.one,

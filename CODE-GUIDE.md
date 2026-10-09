@@ -52,31 +52,20 @@ Browser verzija igre vešanja. Imena i boje dolaze iz URL parametara glavnog men
 
 ## Python desktop igre
 
+Tri Python desktop igre koriste Pygame 2.6: `vesanje/main.py`, `tetris/main.py` i `bilijar/main.py`. Pokreni svaku preko njenog `Start-*.bat` fajla; pokretac proverava da li Pygame moze da se uveze u izabranom Python interpreter-u.
+
 ### `vesanje/main.py`
 
-Ovaj fajl je samostalna Tkinter verzija vešanja. Klasa `HangmanGame` grupiše stanje igre (`word`, `guessed`, `misses`, rezultat) i operacije za prikaz ekrana i obradu poteza.
-
-Tok ekrana je:
-
-1. `show_setup()` prikaže unos imena, zagonetke i reči.
-2. `start_handoff()` proveri unose i pripremi skrivene znakove.
-3. `show_handoff()` zatraži predaju uređaja drugom igraču.
-4. `start_round()` napravi tablu, slova i crtež.
-5. `guess()` obradi izabrano slovo; `draw_hangman()` iscrta naredni deo figure.
-6. `finish_round()` zaključa tastaturu i ažurira rezultat.
-
-`main()` je ulazna tačka: napravi Tkinter prozor, instancu `HangmanGame` i pokrene event loop koji čeka klikove igrača.
-
-Python i browser verzije vešanja su dve zasebne realizacije. Njihov rezultat i tekuća reč se ne dele.
+Klasa `HangmanGame` vodi unos imena, zagonetke i skrivene reci, predaju ekrana, pogadjanje slova i rezultat kroz runde. Pygame petlja crta odgovarajuci ekran i obradjuje tastaturu i klikove. Svaka promasena rec dodaje deo vesala; pogodjena rec donosi poen igracu koji pogadja.
 
 ### `tetris/main.py`
 
-`TetrisGame` čuva mrežu od 10×20 polja, ime igrača, izabrani početni nivo, aktivnu figuru, sledeću figuru, skor i nivo. ` _start_from_setup()` proverava ime i otvara ekran igre. Svaka figura je skup koordinata ćelija. `_fits()` proverava granice i sudare, `_move()` obrađuje pomeranje, a `_rotate()` računa novu orijentaciju bez promene table ako rotacija ne može da stane.
+Klasa `TetrisGame` cuva mrezu 10x20, padajucu figuru, skor i nivoe. `fits()` proverava sudare, `move()` i `rotate()` upravljaju figurom, a `lock_piece()` zakljuca je i uklanja popunjene redove. Pygame crta tablu i odredjuje padanje kroz casovnik glavne petlje. Nivo raste na svakih 1000 poena, a cilj je 5000.
 
-Tkinter `after()` poziva `_tick()` periodično da pomera figuru nadole. Držanje razmaknice smanjuje čekanje između padova. Kad figura više ne može da se pomeri, `_lock_piece()` je upisuje u tablu, a `_clear_full_rows()` uklanja popunjene redove i dodeljuje bodove. Svakih 1000 poena nivo raste i figure padaju brže; igrač pobeđuje na 5000 poena. `_win_game()` prikazuje čestitku sa imenom igrača, a `_end_game()` prikazuje rezultat ako se tabla napuni pre dostizanja cilja. Taster R ponavlja partiju sa istim imenom i početnim nivoom.
+### `bilijar/main.py` i `bilijar/pygame_game.py`
 
-## Kako čitati JavaScript funkciju
+`main.py` je ulazna tacka, a `BilliardsGame` implementacija. Igrac bira 1v1 ili protiv racunara; kugle 1-7 su pune, 9-15 sarene, a 8 je crna. `draw_aim_guide()` prikazuje put bele kugle, ciljane kugle i rupe. `physics_step()` pomera kugle i primenjuje trenje, `collide_balls()` obracunava sudare, `resolve_shot()` dodeljuje grupe i poteze, a `computer_shot()` bira udarac racunara.
 
-Na vrhu većine browser skripti `document.querySelector(...)` pronalazi elemente iz HTML-a. Promenljive zatim čuvaju stanje, funkcije obrađuju pravila, a `addEventListener(...)` povezuje klikove i slanje formi sa tim funkcijama.
+Browser igre u `iks-oks`, `papir-kamen-makaze`, `simple-sah` i browser verzijama `vesanje` i `tetris/web` ostaju JavaScript igre.## Kako citati JavaScript funkciju
 
-Za novu funkciju obično treba izmeniti tri sloja: HTML za elemente, CSS za izgled i JavaScript/Python za ponašanje.
+Browser igre u `mini-games`, `iks-oks`, `papir-kamen-makaze`, `simple-sah`, `vesanje/assets/js` i `tetris/web` koriste JavaScript koji menja HTML prikaz. Python desktop igre koriste Pygame petlju za crtanje, tastaturu, mis i animaciju.

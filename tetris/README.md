@@ -1,21 +1,23 @@
-# Tetris
+﻿# Tetris
 
-Tetris desktop igra za jednog igraca, napravljena pomocu Python-a i Tkinter-a. Pre pocetka igrac unosi ime i bira jedan od pet pocetnih nivoa.
+Pygame desktop Tetris za jednog igraca. Postoje i browser verzija u `web/` i samostalna Pygame verzija u `main.py`.
 
 ## Pokretanje
 
-Iz desktop pokretaca izaberi **Tetris** ili pokreni `Start-Tetris.bat`. Potreban je Python 3 sa Tkinter podrskom.
+Pokreni `Start-Tetris.bat`. Potreban je Python 3 i Pygame 2.6 ili noviji.
 
 ## Nivoi i pobeda
 
-- Igra pocinje na nivou koji igrac izabere.
-- Svakih 1000 poena nivo se povecava, a figure padaju brze.
-- Bodovi za uklonjene redove mnoze se trenutnim nivoom.
-- Cilj je da igrac dostigne 5000 poena. Ekran zatim prikazuje cestitku sa njegovim imenom.
+- Pre igre unesi ime i izaberi jedan od pet pocetnih nivoa.
+- Svakih 1000 poena nivo se povecava i figure padaju brze.
+- Skor se mnozi trenutnim nivoom.
+- Cilj je 5000 poena; pobeda prikazuje cestitku sa imenom igraca.
 
 ## Kontrole
 
-- Klik misa na tablu: rotira figuru koja pada.
-- Strelice levo/desno: pomeraju figuru.
-- Drzi Space: ubrzava padanje.
-- R: zapocinje novu igru za istog igraca i na istom pocetnom nivou.
+- Strelice levo/desno: pomeranje figure.
+- Strelica gore ili klik misa: rotacija.
+- Drzi Space: ubrzaj padanje.
+- Klikni **Igraj ponovo** tokom ili posle partije za novi pokusaj.
+- Escape: zatvori igru.
+- Dugme **Izlaz** zatvara igru mišem.

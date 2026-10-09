@@ -1,248 +1,236 @@
-"""Desktop igra vešanja za dva igrača, napravljena pomoću Tkinter-a."""
+"""Pygame desktop igra vešanja za dva igrača."""
 
-import tkinter as tk
-from tkinter import messagebox
+import sys
+import pygame
 
 
-# Paleta boja koju dele svi prozori i dugmad u igri.
-BACKGROUND = "#10131d"
-PANEL = "#171c29"
-SURFACE = "#20283a"
-TEXT = "#f4f6ff"
-MUTED = "#aeb8d0"
-ACCENT = "#7dd3fc"
-ERROR = "#fb7185"
-SUCCESS = "#4ade80"
+BG = (16, 19, 29)
+PANEL = (23, 28, 41)
+SURFACE = (32, 40, 58)
+TEXT = (244, 246, 255)
+MUTED = (174, 184, 208)
+ACCENT = (125, 211, 252)
+ERROR = (251, 113, 133)
+SUCCESS = (74, 222, 128)
+LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZČĆŠŽĐ"
 MAX_MISSES = 6
 
 
 class HangmanGame:
-    """Objekat igre koji čuva stanje i gradi/menja Tkinter ekrane."""
+    """Čuva stanje vešanja i crta njegove ekrane pomoću Pygame-a."""
 
-    # Sačuvaj glavni prozor, početni rezultat i prikaži ekran za unos.
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Vešanje | Mini Games by Djordan")
-        self.root.configure(bg=BACKGROUND)
-        self.root.minsize(760, 620)
-        self.root.geometry("900x720")
-        # Ove vrednosti važe za ceo život prozora i opstaju između rundi.
+    def __init__(self):
+        pygame.init()
+        pygame.display.set_caption("Vešanje | Mini Games by Djordan")
+        self.screen = pygame.display.set_mode((1180, 800), pygame.FULLSCREEN)
+        self.clock = pygame.time.Clock()
+        self.font = pygame.font.SysFont("segoeui", 22)
+        self.small = pygame.font.SysFont("segoeui", 16)
+        self.heading = pygame.font.SysFont("segoeui", 42, bold=True)
+        self.state = "setup"
+        self.fields = ["", "", "", ""]
+        self.focused = 0
+        self.message = ""
+        self.scores = [0, 0]
         self.round_number = 0
-        self.scores = {"one": 0, "two": 0}
-        self.show_setup()
 
-    # Ukloni trenutne kontrole da bi isti prozor mogao da prikaže novi ekran.
-    def clear(self):
-        for child in self.root.winfo_children():
-            child.destroy()
+    def draw_text(self, text, position, color=TEXT, font=None, center=False):
+        """Prikaži tekst na trenutnom ekranu."""
+        image = (font or self.font).render(text, True, color)
+        rect = image.get_rect(center=position) if center else image.get_rect(topleft=position)
+        self.screen.blit(image, rect)
 
-    # Napravi panel sa podrazumevanom pozadinskom bojom aplikacije.
-    def frame(self, parent, **kwargs):
-        return tk.Frame(parent, bg=kwargs.pop("bg", PANEL), **kwargs)
+    def draw_button(self, rect, label, mouse, primary=True):
+        """Nacrtaj klikabilno dugme i vrati njegov pravougaonik."""
+        shape = pygame.Rect(rect)
+        color = ACCENT if primary else SURFACE
+        if shape.collidepoint(mouse):
+            color = (165, 227, 255) if primary else (48, 59, 79)
+        pygame.draw.rect(self.screen, color, shape, border_radius=11)
+        self.draw_text(label, shape.center, BG if primary else TEXT, self.small, center=True)
+        return shape
 
-    # Napravi tekstualnu oznaku koristeći podrazumevani stil igre.
-    def label(self, parent, text, **kwargs):
-        options = {"bg": PANEL, "fg": TEXT, "font": ("Segoe UI", 12)}
-        options.update(kwargs)
-        return tk.Label(parent, text=text, **options)
+    def setup_screen(self, mouse):
+        """Ekran unosa imena, zagonetke i reči koju treba pogoditi."""
+        self.screen.fill(BG)
+        self.draw_text("MINI GAMES BY DJORDAN", (90, 60), ACCENT, self.small)
+        self.draw_text("Igra vešanja", (90, 94), TEXT, self.heading)
+        captions = ("Ime igrača koji zadaje reč", "Ime igrača koji pogađa",
+                    "Zagonetka ili opis", "Tajna reč (sakrij od drugog igrača)")
+        rects = []
+        for index, caption in enumerate(captions):
+            y = 190 + index * 112
+            self.draw_text(caption, (105, y), MUTED, self.small)
+            rect = pygame.Rect(105, y + 27, 970, 54)
+            rects.append(rect)
+            pygame.draw.rect(self.screen, (42, 54, 75) if index == self.focused else SURFACE,
+                             rect, border_radius=9)
+            value = "•" * len(self.fields[index]) if index == 3 else self.fields[index]
+            self.draw_text(value or "Klikni ovde i unesi tekst...", (rect.x + 14, rect.y + 14),
+                           TEXT if value else (110, 120, 142), self.small)
+        self.draw_text(self.message or "Pogađač ima 6 pokušaja. Razmaci i crtice se otkrivaju automatski.",
+                       (105, 660), ERROR if self.message else MUTED, self.small)
+        button = self.draw_button((865, 710, 210, 52), "Zadaj reč", mouse)
+        return rects, button
 
-    # Napravi dugme u zajedničkom stilu i poveži ga sa funkcijom.
-    def button(self, parent, text, command, **kwargs):
-        return tk.Button(
-            parent, text=text, command=command, bg=ACCENT, fg=BACKGROUND,
-            activebackground="#a5e3ff", activeforeground=BACKGROUND,
-            font=("Segoe UI", 11, "bold"), relief="flat", padx=18, pady=10,
-            cursor="hand2", **kwargs
-        )
-
-    # Prikaži formu u kojoj se zadaju imena, zagonetka i tajna reč.
-    def show_setup(self):
-        self.clear()
-        # Svaki ekran se pravi iznova u istom glavnom prozoru.
-        outer = self.frame(self.root, padx=36, pady=28)
-        outer.pack(fill="both", expand=True, padx=24, pady=24)
-        self.label(outer, "MINI GAMES BY DJORDAN", fg=ACCENT, font=("Segoe UI", 10, "bold")).pack(anchor="w")
-        self.label(outer, "Igra vešanja", font=("Segoe UI", 30, "bold")).pack(anchor="w", pady=(6, 4))
-        self.label(outer, "Igrač 1 zadaje reč i zagonetku, a igrač 2 otkriva reč slovo po slovo.", fg=MUTED, wraplength=740, justify="left").pack(anchor="w", pady=(0, 20))
-
-        fields = self.frame(outer, bg=SURFACE, padx=20, pady=18)
-        fields.pack(fill="x")
-        self.player_one = self.add_field(fields, "Ime igrača koji zadaje reč", "Igrač 1")
-        self.player_two = self.add_field(fields, "Ime igrača koji pogađa", "Igrač 2")
-        self.clue_entry = self.add_field(fields, "Zagonetka ili opis reči", "Unesi zagonetku")
-        self.word_entry = self.add_field(fields, "Tajna reč (neka drugi igrač ne gleda)", "Unesi reč")
-        self.word_entry.bind("<Return>", lambda _event: self.start_handoff())
-        self.button(outer, "Zadaj reč", self.start_handoff).pack(anchor="e", pady=(18, 0))
-        self.label(outer, "Pogađač ima 6 pokušaja. Koriste se slova latinice, uključujući Č, Ć, Š, Ž i Đ. Razmaci i crtice se otkrivaju automatski.", fg=MUTED, font=("Segoe UI", 10), wraplength=740, justify="left").pack(anchor="w", side="bottom", pady=(24, 0))
-
-    # Dodaj naslov i polje za unos; placeholder se briše pri prvom fokusu.
-    def add_field(self, parent, caption, placeholder):
-        group = self.frame(parent, bg=SURFACE)
-        group.pack(fill="x", pady=7)
-        self.label(group, caption, bg=SURFACE, fg=MUTED, font=("Segoe UI", 10, "bold")).pack(anchor="w", pady=(0, 5))
-        entry = tk.Entry(group, font=("Segoe UI", 12), bg=BACKGROUND, fg=TEXT, insertbackground=TEXT, relief="flat")
-        entry.pack(fill="x", ipady=9)
-        entry.insert(0, placeholder)
-        # Prosleđivanje widget-a i teksta kao lambda argumenata izbegava kasno vezivanje.
-        entry.bind("<FocusIn>", lambda _event, widget=entry, hint=placeholder: self.clear_hint(widget, hint))
-        return entry
-
-    # Ukloni početni tekst iz polja samo ako ga igrač nije izmenio.
-    @staticmethod
-    def clear_hint(entry, hint):
-        if entry.get() == hint:
-            entry.delete(0, "end")
-
-    # Proveri unose, pripremi skrivenu reč i prikaži ekran za predaju uređaja.
-    def start_handoff(self):
-        # Čitaj vrednosti tek nakon slanja forme jer ih igrači mogu menjati.
-        name_one = self.player_one.get().strip()
-        name_two = self.player_two.get().strip()
-        clue = self.clue_entry.get().strip()
-        word = self.word_entry.get().strip()
-        # Placeholder tekst ne treba prihvatiti kao stvarno ime ili zagonetku.
-        if name_one in ("", "Igrač 1") or name_two in ("", "Igrač 2"):
-            messagebox.showwarning("Nedostaju imena", "Unesite imena oba igrača.", parent=self.root)
-            return
-        if clue in ("", "Unesi zagonetku") or word in ("", "Unesi reč"):
-            messagebox.showwarning("Nedostaju podaci", "Unesite zagonetku i tajnu reč.", parent=self.root)
-            return
-        if not any(char.isalpha() for char in word):
-            messagebox.showwarning("Neispravna reč", "Tajna reč mora da sadrži bar jedno slovo.", parent=self.root)
+    def submit_setup(self):
+        """Validiraj unose i pripremi sledeću rundu."""
+        name_one, name_two, clue, word = [value.strip() for value in self.fields]
+        if not all((name_one, name_two, clue, word)) or not any(char.isalpha() for char in word):
+            self.message = "Popuni sva polja i unesi reč koja sadrži slovo."
             return
         self.name_one, self.name_two = name_one, name_two
-        self.clue = clue
-        # Normalizuj slova da bi poređenje bilo nezavisno od velikih/malih slova.
-        self.word = word.upper()
-        # Zadrži razmake i znakove, a samo slova zameni praznim mestima.
-        self.hint = " ".join("_" if char.isalpha() else char for char in self.word)
+        self.clue, self.word = clue, word.upper()
         self.guessed = set()
         self.misses = 0
         self.round_number += 1
-        self.show_handoff()
+        self.hint = " ".join("_" if char.isalpha() else char for char in self.word)
+        self.message = ""
+        self.state = "handoff"
 
-    # Sakrij reč i traži od prvog igrača da preda ekran drugom.
-    def show_handoff(self):
-        self.clear()
-        outer = self.frame(self.root, padx=40, pady=40)
-        outer.pack(fill="both", expand=True, padx=24, pady=24)
-        self.label(outer, f"REČ JE ZADATA · RUNDA {self.round_number}", fg=ACCENT, font=("Segoe UI", 10, "bold")).pack(anchor="w")
-        self.label(outer, f"Sada igra {self.name_two}", font=("Segoe UI", 30, "bold")).pack(anchor="w", pady=(12, 8))
-        self.label(outer, f"{self.name_one}, predaj ekran {self.name_two}.\nTajna reč će sada biti sakrivena.", fg=MUTED, font=("Segoe UI", 14), justify="left").pack(anchor="w", pady=(0, 28))
-        self.button(outer, "Predao sam ekran — počni", self.start_round).pack(anchor="w")
+    def handoff_screen(self, mouse):
+        """Ekran za predaju uređaja bez otkrivanja skrivene reči."""
+        self.screen.fill(BG)
+        self.draw_text(f"RUNDA {self.round_number}", (100, 100), ACCENT, self.small)
+        self.draw_text(f"Sada igra {self.name_two}", (100, 150), TEXT, self.heading)
+        self.draw_text(f"{self.name_one}, predaj ekran {self.name_two}.", (100, 230), MUTED)
+        self.draw_text("Tajna reč je sakrivena.", (100, 270), MUTED)
+        return self.draw_button((100, 340, 260, 58), "Predao sam ekran", mouse)
 
-    # Prikaži zagonetku, skrivena slova, tastaturu i crtež vešala.
-    def start_round(self):
-        self.clear()
-        # Leva strana je crtež, desna sadrži reč, greške i tastaturu.
-        outer = self.frame(self.root, padx=24, pady=20)
-        outer.pack(fill="both", expand=True, padx=18, pady=18)
-        header = self.frame(outer)
-        header.pack(fill="x")
-        self.label(header, f"{self.name_one}  ·  ZAGONETKA", fg=ACCENT, font=("Segoe UI", 10, "bold")).pack(anchor="w")
-        self.label(header, self.clue, font=("Segoe UI", 18, "bold"), wraplength=800, justify="left").pack(anchor="w", pady=(5, 2))
-        self.label(header, f"Pogađa: {self.name_two}     Rezultat: {self.name_one} {self.scores['one']} : {self.scores['two']} {self.name_two}", fg=MUTED, font=("Segoe UI", 10)).pack(anchor="w", pady=(0, 8))
-
-        content = self.frame(outer)
-        content.pack(fill="both", expand=True, pady=8)
-        self.canvas = tk.Canvas(content, width=270, height=280, bg=SURFACE, highlightthickness=0)
-        self.canvas.pack(side="left", fill="y", padx=(0, 20))
-        self.draw_hangman()
-
-        right = self.frame(content)
-        right.pack(side="left", fill="both", expand=True)
-        self.word_label = self.label(right, self.hint, font=("Consolas", 24, "bold"), wraplength=510, justify="left")
-        self.word_label.pack(anchor="w", pady=(8, 16))
-        self.misses_label = self.label(right, f"Greške: 0 / {MAX_MISSES}", fg=MUTED)
-        self.misses_label.pack(anchor="w", pady=(0, 10))
-        self.keyboard = self.frame(right)
-        self.keyboard.pack(anchor="w", fill="x")
-        self.build_keyboard()
-        self.status_label = self.label(right, "Izaberi slovo.", fg=MUTED, wraplength=500, justify="left")
-        self.status_label.pack(anchor="w", pady=(14, 0))
-
-    # Napravi dugme za svako slovo latinice koje igra može da pogodi.
-    def build_keyboard(self):
-        letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZČĆŠŽĐ"
-        for index, letter in enumerate(letters):
-            # Podrazumevani argument čuva slovo namenjeno baš ovom dugmetu.
-            button = tk.Button(self.keyboard, text=letter, width=3, command=lambda char=letter: self.guess(char), bg=SURFACE, fg=TEXT, activebackground=ACCENT, activeforeground=BACKGROUND, relief="flat", font=("Segoe UI", 11, "bold"), cursor="hand2")
-            # Računaj red/kolonu da tastatura ima po sedam dugmadi u redu.
-            button.grid(row=index // 7, column=index % 7, padx=3, pady=3, ipadx=2, ipady=5)
-
-    # Obradi slovo, ažuriraj broj grešaka/reč i proveri kraj runde.
-    def guess(self, letter):
-        # Zaštita od ponovnog klika i ponovljenog poziva funkcije.
-        if letter in self.guessed:
-            return
-        self.guessed.add(letter)
-        for button in self.keyboard.winfo_children():
-            if button.cget("text") == letter:
-                button.configure(state="disabled", bg="#30394f", fg=MUTED)
-                break
-        # Pogodak ne dodaje grešku; promašaj dodaje jednu i crta sledeći deo.
-        if letter in self.word:
-            self.status_label.configure(text=f"Slovo {letter} je u reči!", fg=SUCCESS)
-        else:
-            self.misses += 1
-            self.misses_label.configure(text=f"Greške: {self.misses} / {MAX_MISSES}", fg=ERROR if self.misses >= MAX_MISSES - 1 else MUTED)
-            self.status_label.configure(text=f"Slovo {letter} nije u reči.", fg=ERROR)
-            self.draw_hangman()
-        # Otkrij sva ponavljanja već pogođenog slova u reči.
-        self.hint = " ".join(char if not char.isalpha() or char in self.guessed else "_" for char in self.word)
-        self.word_label.configure(text=self.hint)
-        # Proveri da li je reč rešena; ako nije, poslednja greška gubi rundu.
-        if all(not char.isalpha() or char in self.guessed for char in self.word):
-            self.finish_round(won=True)
-        elif self.misses >= MAX_MISSES:
-            self.finish_round(won=False)
-
-    # Iscrtaj osnovna vešala i onoliko delova figure koliko je promašaja.
     def draw_hangman(self):
-        canvas = self.canvas
-        canvas.delete("all")
-        wood = "#aeb8d0"
-        # Osnovna konstrukcija ostaje vidljiva tokom cele runde.
-        canvas.create_line(35, 250, 190, 250, fill=wood, width=5)
-        canvas.create_line(75, 250, 75, 35, fill=wood, width=5)
-        canvas.create_line(75, 35, 185, 35, fill=wood, width=5)
-        canvas.create_line(185, 35, 185, 65, fill=wood, width=4)
-        color = ERROR
-        # Delovi se dodaju po redosledu grešaka: glava, trup, ruke, noge.
+        """Crta vešala i dodaje deo figure za svaku grešku."""
+        color = MUTED
+        pygame.draw.line(self.screen, color, (755, 570), (1050, 570), 7)
+        pygame.draw.line(self.screen, color, (820, 570), (820, 180), 7)
+        pygame.draw.line(self.screen, color, (820, 180), (970, 180), 7)
+        pygame.draw.line(self.screen, color, (970, 180), (970, 230), 6)
         parts = [
-            lambda: canvas.create_oval(165, 65, 205, 105, outline=color, width=4),
-            lambda: canvas.create_line(185, 105, 185, 165, fill=color, width=4),
-            lambda: canvas.create_line(185, 118, 155, 145, fill=color, width=4),
-            lambda: canvas.create_line(185, 118, 215, 145, fill=color, width=4),
-            lambda: canvas.create_line(185, 165, 158, 205, fill=color, width=4),
-            lambda: canvas.create_line(185, 165, 212, 205, fill=color, width=4),
+            lambda: pygame.draw.circle(self.screen, ERROR, (970, 263), 32, 5),
+            lambda: pygame.draw.line(self.screen, ERROR, (970, 295), (970, 395), 5),
+            lambda: pygame.draw.line(self.screen, ERROR, (970, 325), (925, 365), 5),
+            lambda: pygame.draw.line(self.screen, ERROR, (970, 325), (1015, 365), 5),
+            lambda: pygame.draw.line(self.screen, ERROR, (970, 395), (930, 455), 5),
+            lambda: pygame.draw.line(self.screen, ERROR, (970, 395), (1010, 455), 5),
         ]
         for draw_part in parts[:self.misses]:
             draw_part()
 
-    # Zaključa slova, dodeli pobedu i prikaže rezultat cele sesije.
-    def finish_round(self, won):
-        for button in self.keyboard.winfo_children():
-            button.configure(state="disabled")
-        if won:
-            self.scores["two"] += 1
-            title = f"Bravo, {self.name_two}!"
-            message = f"Pogodio/la si reč: {self.word}"
-            color = SUCCESS
-        else:
-            self.scores["one"] += 1
-            title = f"Ovog puta pobeđuje {self.name_one}!"
-            message = f"Cela figura je iscrtana. Reč je bila: {self.word}"
-            color = ERROR
-        self.status_label.configure(text=f"{title}\n{message}\n\nRezultat: {self.name_one} {self.scores['one']} : {self.scores['two']} {self.name_two}", fg=color, font=("Segoe UI", 13, "bold"))
-        self.button(self.root, "Nova runda", self.show_setup).pack(pady=(0, 18))
+    def play_screen(self, mouse):
+        """Prikaži zagonetku, napredak reči i virtuelnu tastaturu."""
+        self.screen.fill(BG)
+        self.draw_text(f"{self.name_one} · ZAGONETKA", (55, 32), ACCENT, self.small)
+        self.draw_text(self.clue, (55, 70), TEXT, self.font)
+        self.draw_text(f"Pogađa: {self.name_two}    Rezultat: {self.scores[0]} : {self.scores[1]}",
+                       (55, 112), MUTED, self.small)
+        self.draw_text(self.hint, (55, 185), TEXT, self.heading)
+        self.draw_text(f"Greške: {self.misses} / {MAX_MISSES}", (55, 250),
+                       ERROR if self.misses >= MAX_MISSES - 1 else MUTED)
+        self.draw_hangman()
+        keys = {}
+        for index, letter in enumerate(LETTERS):
+            row, column = divmod(index, 8)
+            rect = pygame.Rect(55 + column * 60, 330 + row * 58, 50, 46)
+            keys[letter] = rect
+            color = (48, 57, 79) if letter in self.guessed else SURFACE
+            pygame.draw.rect(self.screen, color, rect, border_radius=8)
+            self.draw_text(letter, rect.center, MUTED if letter in self.guessed else TEXT,
+                           self.small, center=True)
+        self.draw_text("Klikni slovo ili koristi tastaturu.", (55, 570), MUTED, self.small)
+        return keys
+
+    def choose_letter(self, letter):
+        """Obradi pogađanje i završi rundu ako je reč rešena ili pokušaji potrošeni."""
+        letter = letter.upper()
+        if letter not in LETTERS or letter in self.guessed or self.state != "play":
+            return
+        self.guessed.add(letter)
+        if letter not in self.word:
+            self.misses += 1
+        self.hint = " ".join(char if not char.isalpha() or char in self.guessed else "_" for char in self.word)
+        if all(not char.isalpha() or char in self.guessed for char in self.word):
+            self.scores[1] += 1
+            self.round_won = True
+            self.message = f"Bravo, {self.name_two}! Pogodio/la si reč: {self.word}"
+            self.state = "result"
+        elif self.misses >= MAX_MISSES:
+            self.scores[0] += 1
+            self.round_won = False
+            self.message = f"Pobeđuje {self.name_one}! Reč je bila: {self.word}"
+            self.state = "result"
+
+    def result_screen(self, mouse):
+        """Prikaži pobednika, reč i rezultat cele sesije."""
+        self.screen.fill(BG)
+        color = SUCCESS if self.round_won else ERROR
+        self.draw_text("RUNDA ZAVRŠENA", (100, 130), ACCENT, self.small)
+        self.draw_text(self.message, (100, 190), color, self.heading)
+        self.draw_text(f"Rezultat: {self.name_one} {self.scores[0]} : {self.scores[1]} {self.name_two}",
+                       (100, 270), MUTED)
+        return self.draw_button((100, 350, 220, 58), "Nova runda", mouse)
+
+    def run(self):
+        """Obrađuje Pygame događaje i crta odgovarajući ekran u 60 FPS."""
+        running = True
+        while running:
+            mouse = pygame.mouse.get_pos()
+            click_targets = []
+            if self.state == "setup":
+                fields, button = self.setup_screen(mouse)
+                click_targets = [("field", index, rect) for index, rect in enumerate(fields)]
+                click_targets.append(("setup", 0, button))
+            elif self.state == "handoff":
+                click_targets = [("handoff", 0, self.handoff_screen(mouse))]
+            elif self.state == "play":
+                click_targets = [("letter", letter, rect) for letter, rect in self.play_screen(mouse).items()]
+            else:
+                click_targets = [("result", 0, self.result_screen(mouse))]
+            exit_rect = self.draw_button((self.screen.get_width() - 180,
+                                          self.screen.get_height() - 65, 155, 44),
+                                         "Izlaz", mouse, False)
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+                    running = False
+                elif event.type == pygame.KEYDOWN:
+                    if self.state == "setup":
+                        if event.key == pygame.K_TAB:
+                            self.focused = (self.focused + 1) % len(self.fields)
+                        elif event.key == pygame.K_BACKSPACE:
+                            self.fields[self.focused] = self.fields[self.focused][:-1]
+                        elif event.key == pygame.K_RETURN:
+                            self.submit_setup()
+                        elif event.unicode and event.unicode.isprintable():
+                            self.fields[self.focused] += event.unicode
+                    elif self.state == "play":
+                        self.choose_letter(event.unicode)
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    if exit_rect.collidepoint(event.pos):
+                        running = False
+                        continue
+                    for kind, value, rect in click_targets:
+                        if not rect.collidepoint(event.pos):
+                            continue
+                        if kind == "field":
+                            self.focused = value
+                        elif kind == "setup":
+                            self.submit_setup()
+                        elif kind == "handoff":
+                            self.state = "play"
+                        elif kind == "letter":
+                            self.choose_letter(value)
+                        elif kind == "result":
+                            self.fields = [self.name_one, self.name_two, "", ""]
+                            self.state = "setup"
+                        break
+            pygame.display.flip()
+            self.clock.tick(60)
+        pygame.quit()
+        sys.exit()
 
 
-# Kreiraj Tkinter prozor, napravi igru i pokreni glavni event loop.
 def main():
-    root = tk.Tk()
-    HangmanGame(root)
-    root.mainloop()
+    """Pokreni Pygame verziju vešanja."""
+    HangmanGame().run()
 
 
 if __name__ == "__main__":

@@ -1,23 +1,24 @@
-"""Jednostavan Tetris za jednog igrača, napravljen pomoću Tkinter-a."""
+"""Pygame desktop Tetris za jednog igrača."""
 
 import random
-import tkinter as tk
+import sys
+import pygame
 
 
-CELL_SIZE = 30
-BOARD_COLUMNS = 10
-BOARD_ROWS = 20
-BACKGROUND = "#10131d"
-PANEL = "#171c29"
-GRID = "#30394f"
-TEXT = "#f4f6ff"
-MUTED = "#aeb8d0"
-ACCENT = "#7dd3fc"
+BG = (16, 19, 29)
+PANEL = (23, 28, 41)
+GRID = (48, 57, 79)
+TEXT = (244, 246, 255)
+MUTED = (174, 184, 208)
+ACCENT = (125, 211, 252)
+ERROR = (251, 113, 133)
+SUCCESS = (74, 222, 128)
+CELL = 30
+COLS = 10
+ROWS = 20
 TARGET_SCORE = 5000
-LEVEL_THRESHOLDS = (0, 1000, 2000, 3000, 4000)
-LEVEL_DELAYS = (650, 520, 410, 310, 220)
-
-# Svaka figura je lista koordinata (red, kolona) u matrici 4x4.
+LINE_POINTS = [0, 100, 300, 500, 800]
+LEVEL_DELAYS = [650, 520, 410, 310, 220]
 SHAPES = {
     "I": [(1, 0), (1, 1), (1, 2), (1, 3)],
     "O": [(0, 1), (0, 2), (1, 1), (1, 2)],
@@ -28,342 +29,309 @@ SHAPES = {
     "L": [(0, 2), (1, 0), (1, 1), (1, 2)],
 }
 COLORS = {
-    "I": "#38bdf8", "O": "#facc15", "T": "#c084fc", "S": "#4ade80",
-    "Z": "#fb7185", "J": "#60a5fa", "L": "#fb923c",
+    "I": (56, 189, 248), "O": (250, 204, 21), "T": (192, 132, 252),
+    "S": (74, 222, 128), "Z": (251, 113, 133), "J": (96, 165, 250),
+    "L": (251, 146, 60),
 }
-LINE_POINTS = [0, 100, 300, 500, 800]
 
 
 class TetrisGame:
-    """Cuva stanje igre i upravlja ekranima, potezima i bodovanjem."""
+    """Čuva mrežu, figure, nivo i rezultat, i crta Pygame prikaz igre."""
 
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Tetris | Mini Games by Djordan")
-        self.root.configure(bg=BACKGROUND)
-        self.root.resizable(False, False)
-
+    def __init__(self):
+        pygame.init()
+        pygame.display.set_caption("Tetris | Mini Games by Djordan")
+        self.screen = pygame.display.set_mode((1180, 820), pygame.FULLSCREEN)
+        self.clock = pygame.time.Clock()
+        self.font = pygame.font.SysFont("segoeui", 22)
+        self.small = pygame.font.SysFont("segoeui", 17)
+        self.heading = pygame.font.SysFont("segoeui", 42, bold=True)
+        self.state = "setup"
+        self.name_text = ""
         self.player_name = ""
+        self.chosen_level = 1
         self.start_level = 1
-        self.board = []
-        self.current = None
-        self.next_kind = random.choice(list(SHAPES))
-        self.score = 0
-        self.lines = 0
-        self.level = 1
-        self.game_over = False
-        self.soft_drop = False
-        self.after_id = None
+        self.message = ""
 
-        self._build_ui()
-        self.root.bind("<KeyPress>", self._on_key_down)
-        self.root.bind("<KeyRelease-space>", self._on_space_release)
+    def draw_text(self, value, x, y, color=TEXT, font=None, center=False):
+        """Nacrtaj tekst na ekranu igre."""
+        image = (font or self.font).render(value, True, color)
+        rect = image.get_rect(center=(x, y)) if center else image.get_rect(topleft=(x, y))
+        self.screen.blit(image, rect)
 
-    def _build_ui(self):
-        """Pravi pocetni ekran za ime/nivo i odvojeni ekran igre."""
-        self.setup_frame = tk.Frame(self.root, bg=BACKGROUND, padx=36, pady=30)
-        self.setup_frame.pack()
-        tk.Label(self.setup_frame, text="TETRIS", bg=BACKGROUND, fg=TEXT,
-                 font=("Segoe UI", 28, "bold")).pack(pady=(0, 8))
-        tk.Label(self.setup_frame, text="Unesi ime i izaberi pocetni nivo",
-                 bg=BACKGROUND, fg=MUTED, font=("Segoe UI", 11)).pack(pady=(0, 20))
+    def button(self, rect, label, mouse, primary=True):
+        """Nacrtaj dugme sa stanjem hover i vrati njegov pravougaonik."""
+        shape = pygame.Rect(rect)
+        color = ACCENT if primary else PANEL
+        if shape.collidepoint(mouse):
+            color = (165, 227, 255) if primary else (48, 59, 79)
+        pygame.draw.rect(self.screen, color, shape, border_radius=10)
+        self.draw_text(label, *shape.center, BG if primary else TEXT, self.small, center=True)
+        return shape
 
-        tk.Label(self.setup_frame, text="Ime igraca", bg=BACKGROUND, fg=TEXT,
-                 font=("Segoe UI", 10, "bold")).pack(anchor="w")
-        self.name_entry = tk.Entry(self.setup_frame, font=("Segoe UI", 12), width=28,
-                                   bg=PANEL, fg=TEXT, insertbackground=TEXT,
-                                   relief="flat")
-        self.name_entry.pack(pady=(6, 18), ipady=7)
-        tk.Label(self.setup_frame, text="Pocetni nivo (cilj za pobedu: 5000 poena)",
-                 bg=BACKGROUND, fg=TEXT, font=("Segoe UI", 10, "bold")).pack(anchor="w")
+    def setup_screen(self, mouse):
+        """Prikaži unos imena i izbor jednog od pet početnih nivoa."""
+        self.screen.fill(BG)
+        self.draw_text("MINI GAMES BY DJORDAN", 100, 75, ACCENT, self.small)
+        self.draw_text("TETRIS", 100, 115, TEXT, self.heading)
+        self.draw_text("Unesi ime igrača", 110, 225, MUTED, self.small)
+        name_rect = pygame.Rect(110, 255, 560, 56)
+        pygame.draw.rect(self.screen, PANEL, name_rect, border_radius=9)
+        self.draw_text(self.name_text or "Ime igrača...", 126, 269,
+                       TEXT if self.name_text else MUTED, self.small)
+        self.draw_text("Početni nivo (pobeda na 5000 poena)", 110, 345, MUTED, self.small)
+        levels = []
+        for level in range(1, 6):
+            rect = pygame.Rect(110 + (level - 1) * 118, 380, 104, 52)
+            levels.append(rect)
+            color = ACCENT if level == self.chosen_level else PANEL
+            if rect.collidepoint(mouse) and level != self.chosen_level:
+                color = (48, 59, 79)
+            pygame.draw.rect(self.screen, color, rect, border_radius=9)
+            label_color = BG if level == self.chosen_level else TEXT
+            self.draw_text(f"Nivo {level}", *rect.center, label_color, self.small, center=True)
+        self.draw_text("Svaki naredni nivo ubrzava padanje. Svakih 1000 poena prelaziš nivo.",
+                       110, 465, MUTED, self.small)
+        if self.message:
+            self.draw_text(self.message, 110, 525, ERROR, self.small)
+        start_rect = self.button((110, 570, 220, 56), "Započni igru", mouse)
+        return name_rect, levels, start_rect
 
-        self.level_choice = tk.IntVar(value=1)
-        level_panel = tk.Frame(self.setup_frame, bg=BACKGROUND)
-        level_panel.pack(anchor="w", pady=(8, 18))
-        for level, threshold in enumerate(LEVEL_THRESHOLDS, start=1):
-            info = f"Nivo {level}  |  do {level * 1000} poena"
-            if level == 5:
-                info = "Nivo 5  |  cilj: pobeda na 5000"
-            tk.Radiobutton(level_panel, text=info, variable=self.level_choice,
-                           value=level, bg=BACKGROUND, fg=TEXT, selectcolor=PANEL,
-                           activebackground=BACKGROUND, activeforeground=ACCENT,
-                           font=("Segoe UI", 10)).pack(anchor="w", pady=2)
-
-        self.setup_error = tk.Label(self.setup_frame, text="", bg=BACKGROUND,
-                                    fg="#fb7185", font=("Segoe UI", 10))
-        self.setup_error.pack()
-        tk.Button(self.setup_frame, text="Zapocni igru", command=self._start_from_setup,
-                  bg=ACCENT, fg=BACKGROUND, activebackground="#bae6fd",
-                  relief="flat", font=("Segoe UI", 11, "bold"), padx=22,
-                  pady=9, cursor="hand2").pack(pady=(8, 0))
-
-        self.game_frame = tk.Frame(self.root, bg=BACKGROUND, padx=24, pady=20)
-        tk.Label(self.game_frame, text="TETRIS", bg=BACKGROUND, fg=TEXT,
-                 font=("Segoe UI", 24, "bold")).pack(anchor="w")
-        self.player_label = tk.Label(self.game_frame, text="", bg=BACKGROUND,
-                                     fg=MUTED, font=("Segoe UI", 10))
-        self.player_label.pack(anchor="w", pady=(0, 12))
-
-        content = tk.Frame(self.game_frame, bg=BACKGROUND)
-        content.pack()
-        self.canvas = tk.Canvas(
-            content, width=BOARD_COLUMNS * CELL_SIZE, height=BOARD_ROWS * CELL_SIZE,
-            bg="#0b0e16", highlightthickness=2, highlightbackground=GRID
-        )
-        self.canvas.pack(side="left")
-        self.canvas.bind("<Button-1>", self._on_mouse_click)
-
-        sidebar = tk.Frame(content, bg=PANEL, padx=16, pady=16, width=190)
-        sidebar.pack(side="left", fill="y", padx=(16, 0))
-        sidebar.pack_propagate(False)
-        self._label(sidebar, "SLEDECA FIGURA", ACCENT, 9, bold=True).pack(anchor="w")
-        self.preview = tk.Canvas(sidebar, width=150, height=100, bg=BACKGROUND,
-                                 highlightthickness=0)
-        self.preview.pack(anchor="w", pady=(8, 18))
-        self.score_label = self._label(sidebar, "Skor: 0", TEXT, 14, bold=True)
-        self.score_label.pack(anchor="w", pady=4)
-        self.lines_label = self._label(sidebar, "Redovi: 0", MUTED, 11)
-        self.lines_label.pack(anchor="w", pady=4)
-        self.level_label = self._label(sidebar, "Nivo: 1", MUTED, 11)
-        self.level_label.pack(anchor="w", pady=4)
-        self.target_label = self._label(sidebar, "Sledeci nivo: 1000", MUTED, 10)
-        self.target_label.pack(anchor="w", pady=4)
-        self.status_label = self._label(sidebar, "", ACCENT, 10, bold=True, wraplength=155)
-        self.status_label.pack(anchor="w", pady=(14, 4))
-        self.replay_button = tk.Button(
-            sidebar, text="Igraj ponovo", command=self.new_game,
-            bg=ACCENT, fg=BACKGROUND, activebackground="#bae6fd",
-            relief="flat", font=("Segoe UI", 10, "bold"), padx=10,
-            pady=7, cursor="hand2"
-        )
-        self.replay_button.pack(anchor="w", fill="x", pady=(8, 4))
-        self._label(sidebar, "Strelice levo/desno: pomeranje\nKlik misa: rotacija\nSpace: ubrzaj padanje\nR: nova igra",
-                    MUTED, 9, justify="left").pack(anchor="w", side="bottom")
-
-    @staticmethod
-    def _label(parent, text, color, size, **kwargs):
-        """Napravi tekstualnu oznaku u zajednickom stilu igre."""
-        bold = kwargs.pop("bold", False)
-        return tk.Label(parent, text=text, bg=parent.cget("bg"), fg=color,
-                        font=("Segoe UI", size, "bold" if bold else "normal"), **kwargs)
-
-    def _start_from_setup(self):
-        """Proveri ime i pokreni partiju sa izabranim pocetnim nivoom."""
-        name = self.name_entry.get().strip()
-        if not name:
-            self.setup_error.configure(text="Unesi ime igraca pre pocetka.")
-            self.name_entry.focus_set()
+    def begin_game(self):
+        """Proveri ime i pokreni novu tablu na izabranom nivou."""
+        self.player_name = self.name_text.strip()
+        if not self.player_name:
+            self.message = "Unesi ime igrača pre početka."
             return
-        self.player_name = name
-        self.start_level = self.level_choice.get()
-        self.setup_error.configure(text="")
-        self.player_label.configure(text=f"Igrac: {self.player_name}")
-        self.setup_frame.pack_forget()
-        self.game_frame.pack()
+        self.start_level = self.chosen_level
+        self.state = "playing"
         self.new_game()
-        self.canvas.focus_set()
 
     def new_game(self):
-        """Resetuje tablu, rezultat i tajmer, pa krece od izabranog nivoa."""
-        if self.after_id is not None:
-            self.root.after_cancel(self.after_id)
-            self.after_id = None
-        self.board = [[None for _ in range(BOARD_COLUMNS)] for _ in range(BOARD_ROWS)]
+        """Resetuj tablu i skor, zadržavajući ime i izabrani nivo."""
+        self.board = [[None for _ in range(COLS)] for _ in range(ROWS)]
         self.score = 0
         self.lines = 0
         self.level = self.start_level
         self.game_over = False
         self.soft_drop = False
-        self.next_kind = random.choice(list(SHAPES))
-        self.status_label.configure(text="", fg=ACCENT)
-        self._update_stats()
-        self._spawn_piece()
-        self._tick()
+        self.next_kind = self.random_kind()
+        self.spawn_piece()
+        self.next_fall = pygame.time.get_ticks() + LEVEL_DELAYS[self.level - 1]
 
-    def _spawn_piece(self):
-        """Postavlja sledecu nasumicnu figuru na vrh table."""
+    @staticmethod
+    def random_kind():
+        """Izaberi nasumičan oblik tetromina."""
+        return random.choice(tuple(SHAPES))
+
+    def spawn_piece(self):
+        """Postavi sledeću figuru na vrh table i proveri sudar."""
         kind = self.next_kind
-        self.next_kind = random.choice(list(SHAPES))
-        self.current = {"kind": kind, "cells": list(SHAPES[kind]), "row": 0,
-                        "column": (BOARD_COLUMNS - 4) // 2}
-        self._draw_preview()
-        if not self._fits(self.current["row"], self.current["column"], self.current["cells"]):
-            self._end_game()
+        self.next_kind = self.random_kind()
+        self.current = {"kind": kind, "cells": list(SHAPES[kind]), "row": 0, "column": 3}
+        if not self.fits(self.current["row"], self.current["column"], self.current["cells"]):
+            self.finish(False)
 
-    def _fits(self, row, column, cells):
-        """Proverava da li figura staje na poziciju bez izlaska/sudara."""
+    def fits(self, row, column, cells):
+        """Proveri granice i sudare za predloženu poziciju figure."""
         for cell_row, cell_column in cells:
             board_row = row + cell_row
             board_column = column + cell_column
-            if board_column < 0 or board_column >= BOARD_COLUMNS or board_row >= BOARD_ROWS:
+            if board_column < 0 or board_column >= COLS or board_row >= ROWS:
                 return False
             if board_row >= 0 and self.board[board_row][board_column] is not None:
                 return False
         return True
 
-    def _move(self, row_delta, column_delta):
-        """Pomeraj aktivnu figuru ako je odredisna pozicija slobodna."""
-        if self.game_over or self.current is None:
+    def move(self, dr, dc):
+        """Pomeri aktivnu figuru ako odredišna polja nisu zauzeta."""
+        if self.game_over:
             return False
-        row = self.current["row"] + row_delta
-        column = self.current["column"] + column_delta
-        if not self._fits(row, column, self.current["cells"]):
+        row, column = self.current["row"] + dr, self.current["column"] + dc
+        if not self.fits(row, column, self.current["cells"]):
             return False
-        self.current["row"] = row
-        self.current["column"] = column
-        self._draw()
+        self.current["row"], self.current["column"] = row, column
         return True
 
-    def _rotate(self):
-        """Rotira figuru u smeru kazaljke na satu kada nova poza staje."""
-        if self.game_over or self.current is None:
-            return
-        rotated = [(column, 3 - row) for row, column in self.current["cells"]]
-        min_row = min(row for row, _ in rotated)
-        min_column = min(column for _, column in rotated)
-        rotated = [(row - min_row, column - min_column) for row, column in rotated]
-        if self._fits(self.current["row"], self.current["column"], rotated):
-            self.current["cells"] = rotated
-            self._draw()
-
-    def _on_mouse_click(self, _event):
-        """Klik na tabli rotira figuru koja pada."""
-        self._rotate()
-        self.canvas.focus_set()
-
-    def _on_key_down(self, event):
-        """Obradi pomeranje, ubrzano padanje i restart preko tastature."""
-        if event.keysym == "Left":
-            self._move(0, -1)
-        elif event.keysym == "Right":
-            self._move(0, 1)
-        elif event.keysym == "space" and self.game_frame.winfo_ismapped():
-            self.soft_drop = True
-        elif event.keysym.lower() == "r" and self.game_frame.winfo_ismapped():
-            self.new_game()
-
-    def _on_space_release(self, _event):
-        """Vrati obicnu brzinu kada igrac pusti razmaknicu."""
-        self.soft_drop = False
-
-    def _tick(self):
-        """Pomeri figuru za jedan korak i zakazi sledeci korak."""
+    def rotate(self):
+        """Rotiraj trenutnu figuru za 90 stepeni u smeru kazaljke na satu."""
         if self.game_over:
-            self.after_id = None
             return
-        if not self._move(1, 0):
-            self._lock_piece()
-        if self.game_over:
-            self.after_id = None
-            return
-        self.after_id = self.root.after(self._fall_delay(), self._tick)
+        turned = [(column, 3 - row) for row, column in self.current["cells"]]
+        min_row = min(row for row, _ in turned)
+        min_column = min(column for _, column in turned)
+        turned = [(row - min_row, column - min_column) for row, column in turned]
+        if self.fits(self.current["row"], self.current["column"], turned):
+            self.current["cells"] = turned
 
-    def _fall_delay(self):
-        """Vraca brzinu padanja za nivo; Space daje privremeni brzi pad."""
-        if self.soft_drop:
-            return 45
-        return LEVEL_DELAYS[self.level - 1]
-
-    def _lock_piece(self):
-        """Zakljuca figuru, obradi redove i zavrsi pobedom ili porazom."""
+    def lock_piece(self):
+        """Zaključaj figuru, ukloni pune redove, dodeli bodove i proveri pobedu."""
         for cell_row, cell_column in self.current["cells"]:
-            row = self.current["row"] + cell_row
-            column = self.current["column"] + cell_column
+            row, column = self.current["row"] + cell_row, self.current["column"] + cell_column
             if row < 0:
-                self._end_game()
-                return
+                return self.finish(False)
             self.board[row][column] = COLORS[self.current["kind"]]
-        self._clear_full_rows()
-        if self.score >= TARGET_SCORE:
-            self._win_game()
-            return
-        self._spawn_piece()
-        self._draw()
-
-    def _clear_full_rows(self):
-        """Ukloni popunjene redove, dodeli poene i azuriraj nivo."""
         remaining = [row for row in self.board if not all(cell is not None for cell in row)]
-        cleared = BOARD_ROWS - len(remaining)
-        if not cleared:
-            return
-        self.board = [[None for _ in range(BOARD_COLUMNS)] for _ in range(cleared)] + remaining
-        self.score += LINE_POINTS[cleared] * self.level
-        self.lines += cleared
-        score_level = min(5, self.score // 1000 + 1)
-        self.level = max(self.start_level, score_level)
-        self._update_stats()
+        cleared = ROWS - len(remaining)
+        if cleared:
+            self.board = [[None for _ in range(COLS)] for _ in range(cleared)] + remaining
+            self.score += LINE_POINTS[cleared] * self.level
+            self.lines += cleared
+            self.level = max(self.start_level, min(5, self.score // 1000 + 1))
+        if self.score >= TARGET_SCORE:
+            return self.finish(True)
+        self.spawn_piece()
 
-    def _update_stats(self):
-        """Prikazi skor, linije, trenutni nivo i sledeci prag."""
-        self.score_label.configure(text=f"Skor: {self.score} / {TARGET_SCORE}")
-        self.lines_label.configure(text=f"Redovi: {self.lines}")
-        self.level_label.configure(text=f"Nivo: {self.level} / 5")
-        if self.level < 5:
-            self.target_label.configure(text=f"Sledeci nivo: {self.level * 1000}")
-        else:
-            self.target_label.configure(text="Cilj za pobedu: 5000")
+    def finish(self, won):
+        """Zaustavi igru i zapamti da li je igrač pobedio ili izgubio."""
+        self.game_over = True
+        self.state = "result"
+        self.won = won
 
-    def _draw_cell(self, canvas, column, row, color, size=CELL_SIZE):
-        """Iscrtaj jedno obojeno polje sa tankom ivicom."""
-        x1, y1 = column * size, row * size
-        canvas.create_rectangle(x1, y1, x1 + size, y1 + size,
-                                fill=color, outline=BACKGROUND, width=2)
+    def draw_cell(self, x, y, color):
+        """Nacrtaj jedno obojeno polje tetromina."""
+        rect = pygame.Rect(x, y, CELL, CELL)
+        pygame.draw.rect(self.screen, color, rect.inflate(-2, -2), border_radius=4)
+        pygame.draw.rect(self.screen, GRID, rect, 1, border_radius=4)
 
-    def _draw_preview(self):
-        """Prikazi sledecu figuru u bocnom panelu."""
-        self.preview.delete("all")
-        cells = SHAPES[self.next_kind]
-        min_row = min(row for row, _ in cells)
-        min_column = min(column for _, column in cells)
-        for row, column in cells:
-            x = (column - min_column) * 24 + 28
-            y = (row - min_row) * 24 + 12
-            self.preview.create_rectangle(x, y, x + 24, y + 24,
-                                          fill=COLORS[self.next_kind], outline=BACKGROUND, width=2)
-
-    def _draw(self):
-        """Iscrtaj zakljucana polja, mrezu i figuru koja trenutno pada."""
-        self.canvas.delete("all")
-        for row, board_row in enumerate(self.board):
-            for column, color in enumerate(board_row):
+    def game_screen(self, mouse):
+        """Nacrtaj tablu, sledeću figuru, rezultat i kontrole."""
+        self.screen.fill(BG)
+        board_x = max(80, self.screen.get_width() // 2 - 340)
+        board_y = max(44, (self.screen.get_height() - ROWS * CELL) // 2)
+        self.draw_text("TETRIS", board_x, 20, TEXT, self.heading)
+        self.draw_text(f"Igrač: {self.player_name}", board_x, 70, MUTED, self.small)
+        pygame.draw.rect(self.screen, PANEL, (board_x - 5, board_y - 5, COLS * CELL + 10, ROWS * CELL + 10), border_radius=8)
+        pygame.draw.rect(self.screen, (11, 14, 22), (board_x, board_y, COLS * CELL, ROWS * CELL))
+        for row, values in enumerate(self.board):
+            for column, color in enumerate(values):
                 if color:
-                    self._draw_cell(self.canvas, column, row, color)
-        for row in range(BOARD_ROWS + 1):
-            self.canvas.create_line(0, row * CELL_SIZE, BOARD_COLUMNS * CELL_SIZE,
-                                    row * CELL_SIZE, fill=GRID)
-        for column in range(BOARD_COLUMNS + 1):
-            self.canvas.create_line(column * CELL_SIZE, 0, column * CELL_SIZE,
-                                    BOARD_ROWS * CELL_SIZE, fill=GRID)
-        if self.current:
-            color = COLORS[self.current["kind"]]
-            for row, column in self.current["cells"]:
-                self._draw_cell(self.canvas, self.current["column"] + column,
-                                self.current["row"] + row, color)
+                    self.draw_cell(board_x + column * CELL, board_y + row * CELL, color)
+        for row in range(ROWS + 1):
+            pygame.draw.line(self.screen, GRID, (board_x, board_y + row * CELL), (board_x + COLS * CELL, board_y + row * CELL))
+        for column in range(COLS + 1):
+            pygame.draw.line(self.screen, GRID, (board_x + column * CELL, board_y), (board_x + column * CELL, board_y + ROWS * CELL))
+        for row, column in self.current["cells"]:
+            self.draw_cell(board_x + (self.current["column"] + column) * CELL,
+                           board_y + (self.current["row"] + row) * CELL,
+                           COLORS[self.current["kind"]])
 
-    def _win_game(self):
-        """Zaustavi partiju i prikazi cestitku kada skor dostigne cilj."""
-        self.game_over = True
-        self.status_label.configure(
-            text=f"Cestitamo, {self.player_name}!\nPobeda sa {self.score} poena!\nPritisni R za novu igru",
-            fg="#4ade80",
-        )
-        self._draw()
+        panel_x = board_x + COLS * CELL + 50
+        self.draw_text("SLEDEĆA FIGURA", panel_x, board_y, ACCENT, self.small)
+        preview_cells = SHAPES[self.next_kind]
+        min_row = min(row for row, _ in preview_cells)
+        min_col = min(column for _, column in preview_cells)
+        for row, column in preview_cells:
+            self.draw_cell(panel_x + 25 + (column - min_col) * 25,
+                           board_y + 45 + (row - min_row) * 25, COLORS[self.next_kind])
+        self.draw_text(f"Skor: {self.score} / {TARGET_SCORE}", panel_x, board_y + 150)
+        self.draw_text(f"Redovi: {self.lines}", panel_x, board_y + 190, MUTED, self.small)
+        self.draw_text(f"Nivo: {self.level} / 5", panel_x, board_y + 225, MUTED, self.small)
+        target = f"Sledeći nivo: {self.level * 1000}" if self.level < 5 else "Cilj: 5000"
+        self.draw_text(target, panel_x, board_y + 260, ACCENT, self.small)
+        self.draw_text("← →  Pomeranje", panel_x, board_y + 340, MUTED, self.small)
+        self.draw_text("Klik / ↑  Rotacija", panel_x, board_y + 370, MUTED, self.small)
+        self.draw_text("Space  Brže padanje", panel_x, board_y + 400, MUTED, self.small)
+        replay = self.button((panel_x, board_y + 470, 190, 46), "Igraj ponovo", mouse, False)
+        menu = self.button((panel_x, board_y + 525, 190, 46), "Izbor nivoa", mouse, False)
+        return replay, menu
 
-    def _end_game(self):
-        """Zaustavi partiju i prikazi igracu konacan rezultat."""
-        self.game_over = True
-        self.status_label.configure(
-            text=f"Kraj igre, {self.player_name}\nSkor: {self.score}\nPritisni R za novu igru",
-            fg="#fb7185",
-        )
-        self._draw()
+    def result_screen(self, mouse):
+        """Prikaži pobedu ili poraz sa stalno dostupnim ponovnim pokušajem."""
+        replay, menu = self.game_screen(mouse)
+        overlay = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
+        overlay.fill((8, 10, 16, 205))
+        self.screen.blit(overlay, (0, 0))
+        color = SUCCESS if self.won else ERROR
+        title = f"Čestitamo, {self.player_name}!" if self.won else f"Kraj igre, {self.player_name}"
+        self.draw_text(title, self.screen.get_width() // 2, self.screen.get_height() // 2 - 80,
+                       color, self.heading, center=True)
+        self.draw_text(f"Skor: {self.score} poena", self.screen.get_width() // 2,
+                       self.screen.get_height() // 2 - 24, TEXT, center=True)
+        replay = pygame.Rect(self.screen.get_width() // 2 - 220,
+                             self.screen.get_height() // 2 + 40, 200, 58)
+        menu = pygame.Rect(self.screen.get_width() // 2 + 20,
+                           self.screen.get_height() // 2 + 40, 200, 58)
+        self.button(replay, "Igraj ponovo", mouse)
+        self.button(menu, "Izbor nivoa", mouse, False)
+        return replay, menu
+
+    def run(self):
+        """Obrađuj tastaturu i miš, i održavaj padanje figura u 60 FPS."""
+        running = True
+        while running:
+            now = pygame.time.get_ticks()
+            mouse = pygame.mouse.get_pos()
+            setup_controls = None
+            replay_rect = menu_rect = None
+            if self.state == "setup":
+                setup_controls = self.setup_screen(mouse)
+            elif self.state == "playing":
+                replay_rect, menu_rect = self.game_screen(mouse)
+                delay = 45 if self.soft_drop else LEVEL_DELAYS[self.level - 1]
+                if not self.game_over and now >= self.next_fall:
+                    if not self.move(1, 0):
+                        self.lock_piece()
+                    self.next_fall = now + delay
+            else:
+                replay_rect, menu_rect = self.result_screen(mouse)
+            exit_rect = self.button((self.screen.get_width() - 170,
+                                     self.screen.get_height() - 62, 145, 42),
+                                    "Izlaz", mouse, False)
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        running = False
+                    elif self.state == "setup":
+                        if event.key == pygame.K_BACKSPACE:
+                            self.name_text = self.name_text[:-1]
+                        elif event.key == pygame.K_RETURN:
+                            self.begin_game()
+                        elif event.unicode and event.unicode.isprintable():
+                            self.name_text += event.unicode
+                    elif self.state == "playing":
+                        if event.key == pygame.K_LEFT:
+                            self.move(0, -1)
+                        elif event.key == pygame.K_RIGHT:
+                            self.move(0, 1)
+                        elif event.key == pygame.K_UP:
+                            self.rotate()
+                        elif event.key == pygame.K_SPACE:
+                            self.soft_drop = True
+                elif event.type == pygame.KEYUP and event.key == pygame.K_SPACE:
+                    self.soft_drop = False
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    if exit_rect.collidepoint(event.pos):
+                        running = False
+                    elif self.state == "setup" and setup_controls:
+                        name_rect, level_rects, start_rect = setup_controls
+                        if name_rect.collidepoint(event.pos):
+                            self.name_focused = True
+                        for level, rect in enumerate(level_rects, 1):
+                            if rect.collidepoint(event.pos):
+                                self.chosen_level = level
+                        if start_rect.collidepoint(event.pos):
+                            self.begin_game()
+                    elif self.state in ("playing", "result") and replay_rect:
+                        if replay_rect.collidepoint(event.pos):
+                            self.state = "playing"
+                            self.new_game()
+                        elif menu_rect.collidepoint(event.pos):
+                            self.state = "setup"
+                    elif self.state == "playing":
+                        self.rotate()
+            pygame.display.flip()
+            self.clock.tick(60)
+        pygame.quit()
+        sys.exit()
 
 
 def main():
-    """Kreira Tkinter prozor i pokrece glavnu petlju dogadjaja."""
-    root = tk.Tk()
-    TetrisGame(root)
-    root.mainloop()
+    """Pokreni Pygame Tetris."""
+    TetrisGame().run()
 
 
 if __name__ == "__main__":

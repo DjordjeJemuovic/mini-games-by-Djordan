@@ -6,7 +6,7 @@ Za objašnjenje JavaScript i Python fajlova pogledaj [CODE-GUIDE.md](../CODE-GUI
 
 ## Pokretanje
 
-Pokreni `Start-Mini-Games.bat` iz glavnog foldera da otvoriš desktop meni. Iz njega možeš pokrenuti browser igre ili samostalno Python vešanje. Za direktno otvaranje glavnog menija, otvori `index.html` u pregledaču.
+Pokreni `Start-Mini-Games.bat` iz glavnog foldera da otvoriš desktop meni. Iz njega možeš pokrenuti browser igre, kao i Python igre Vešanje, Tetris i Bilijar. Bilijar se pokreće u svom Pygame prozoru; zatvori ga da se vratiš u meni. Za direktno otvaranje glavnog menija otvori `index.html` u pregledaču; desktop igre se pokreću preko `.bat` pokretača.
 
 ## Igre
 
@@ -15,6 +15,7 @@ Pokreni `Start-Mini-Games.bat` iz glavnog foldera da otvoriš desktop meni. Iz n
 - `../simple-sah/` — šah 1v1 ili protiv računara, sa tajmerom od 15 minuta.
 - `../vesanje/` — igra vešanja za dva igrača; jedan zadaje zagonetku i reč, drugi pogađa slova.
 - `../tetris/` — samostalna Python desktop igra. Pokreće se iz desktop pokretača.
+- `../bilijar/` — Python bilijar za dva igrača ili protiv računara. Pokreće se iz desktop pokretača.
 
 Glavni meni prosleđuje imena i boje kroz URL parametre. U iks-oksu se nakon izbora režima igra odmah pokreće sa tim imenima i bojama; u papir-kamen-makazama se imena prikazuju u izabranom režimu. Svaka igra može da se pokrene i samostalno.
 
